@@ -13,38 +13,35 @@
         android:paddingTop="5dp"
         android:text="RF face&amp;body" />
 
-    <ImageButton
+    <Button
         android:id="@+id/button_play"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
         android:layout_centerHorizontal="true"
         android:layout_marginBottom="40dp"
-        android:background="@android:color/transparent"
-        android:onClick="pressBtnStart"
-        android:src="@drawable/button_play" />
+        android:background="@drawable/button_play"
+        android:onClick="pressBtnStart" />
 
-    <ImageButton
+    <Button
         android:id="@+id/button_pause"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignBottom="@+id/button_play"
         android:layout_marginBottom="15dp"
         android:layout_toLeftOf="@+id/button_play"
-        android:background="@android:color/transparent"
-        android:onClick="pressBtnPause"
-        android:src="@drawable/button_pause" />
+        android:background="@drawable/button_pause"
+        android:onClick="pressBtnPause" />
 
-    <ImageButton
+    <Button
         android:id="@+id/button_stop"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignBottom="@+id/button_play"
         android:layout_marginBottom="15dp"
         android:layout_toRightOf="@+id/button_play"
-        android:background="@android:color/transparent"
-        android:onClick="pressBtnStop"
-        android:src="@drawable/button_stop" />
+        android:background="@drawable/button_stop"
+        android:onClick="pressBtnStop" />
 
     <TableRow
         android:id="@+id/tableRow1"
@@ -150,6 +147,14 @@
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
         android:layout_alignParentRight="true"
+        android:textSize="20sp" />
+
+    <TextView
+        android:id="@+id/tv"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_alignRight="@+id/vertical_Seekbar_left"
         android:textSize="20sp" />
 
 </RelativeLayout>

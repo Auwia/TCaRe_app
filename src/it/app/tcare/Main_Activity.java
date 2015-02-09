@@ -11,9 +11,10 @@ import android.os.Message;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.MotionEvent;
 import android.view.View;
+import android.view.View.OnTouchListener;
 import android.widget.Button;
-import android.widget.ImageButton;
 import android.widget.SeekBar;
 import android.widget.SeekBar.OnSeekBarChangeListener;
 import android.widget.TextView;
@@ -21,10 +22,10 @@ import android.widget.TextView;
 public class Main_Activity extends Activity {
 
 	private VerticalSeekBar verticalSeekBar_left, verticalSeekBar_right = null;
-	private TextView vsProgress_left, vsProgress_right, title, time,
-			revision = null;
-	private ImageButton pauseButton, playButton, stopButton = null;
-	private Button cap, res, body, face = null;
+	private TextView vsProgress_left, vsProgress_right, title, time, revision,
+			tv = null;
+
+	private Button play, stop, pause, cap, res, body, face = null;
 
 	public FT311UARTInterface uartInterface;
 	public handler_thread handlerThread;
@@ -94,33 +95,6 @@ public class Main_Activity extends Activity {
 		System.exit(0);
 	}
 
-	public void pressBtnStart(View v) {
-		writeData("S");
-
-		Log.d("TCARE",
-				"Thread lettura attiva su interfaccia: "
-						+ uartInterface.thread_lettura_is_alive());
-
-	}
-
-	public void pressBtnStop(View v) {
-		writeData("T");
-
-		Log.d("TCARE",
-				"Thread lettura attiva su interfaccia: "
-						+ uartInterface.thread_lettura_is_alive());
-
-	}
-
-	public void pressBtnPause(View v) {
-		writeData("P");
-
-		Log.d("TCARE",
-				"Thread lettura attiva su interfaccia: "
-						+ uartInterface.thread_lettura_is_alive());
-
-	}
-
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
@@ -137,6 +111,8 @@ public class Main_Activity extends Activity {
 		}
 		revision = (TextView) findViewById(R.id.revision);
 		revision.setText(pInfo.versionName);
+
+		tv = (TextView) findViewById(R.id.tv);
 
 		uartInterface = new FT311UARTInterface(this, null);
 		updateBarHandler = new Handler();
@@ -161,6 +137,70 @@ public class Main_Activity extends Activity {
 		cap = (Button) findViewById(R.id.cap);
 		cap.setPressed(true);
 		cap.setTextColor(Color.parseColor("#015c5f"));
+
+		play = (Button) findViewById(R.id.button_play);
+		play.setOnTouchListener(new OnTouchListener() {
+			@Override
+			public boolean onTouch(View v, MotionEvent event) {
+				// show interest in events resulting from ACTION_DOWN
+				if (event.getAction() == MotionEvent.ACTION_DOWN) {
+					writeData("S");
+					return true;
+				}
+
+				// don't handle event unless its ACTION_UP so "doSomething()"
+				// only runs once.
+				if (event.getAction() != MotionEvent.ACTION_UP)
+					return false;
+				;
+				play.setPressed(true);
+				pause.setPressed(false);
+				stop.setPressed(false);
+				return true;
+			}
+		});
+
+		stop = (Button) findViewById(R.id.button_stop);
+		stop.setOnTouchListener(new OnTouchListener() {
+			@Override
+			public boolean onTouch(View v, MotionEvent event) {
+				// show interest in events resulting from ACTION_DOWN
+				if (event.getAction() == MotionEvent.ACTION_DOWN) {
+					writeData("T");
+					return true;
+				}
+				// don't handle event unless its ACTION_UP so "doSomething()"
+				// only runs once.
+				if (event.getAction() != MotionEvent.ACTION_UP)
+					return false;
+				;
+				stop.setPressed(true);
+				play.setPressed(false);
+				pause.setPressed(false);
+				return true;
+			}
+		});
+
+		pause = (Button) findViewById(R.id.button_pause);
+		pause.setOnTouchListener(new OnTouchListener() {
+			@Override
+			public boolean onTouch(View v, MotionEvent event) {
+				// show interest in events resulting from ACTION_DOWN
+				if (event.getAction() == MotionEvent.ACTION_DOWN) {
+					writeData("P");
+					return true;
+				}
+				// don't handle event unless its ACTION_UP so "doSomething()"
+				// only runs once.
+				if (event.getAction() != MotionEvent.ACTION_UP)
+					return false;
+				;
+				pause.setPressed(true);
+				play.setPressed(false);
+				stop.setPressed(false);
+				return true;
+			}
+		});
 
 		verticalSeekBar_left = (VerticalSeekBar) findViewById(R.id.vertical_Seekbar_left);
 		vsProgress_left = (TextView) findViewById(R.id.vertical_sb_progresstext_left);
@@ -278,32 +318,52 @@ public class Main_Activity extends Activity {
 	final Handler handler = new Handler() {
 		@Override
 		public void handleMessage(Message msg) {
+			synchronized (this) {
 
-			readSB.delete(0, readSB.length());
-
-			for (int i = 0; i < actualNumBytes[0]; i++) {
-				readBufferToChar[i] = (char) readBuffer[i];
+				for (int i = 0; i < actualNumBytes[0]; i++) {
+					readBufferToChar[i] = (char) readBuffer[i];
+				}
+				appendData(readBufferToChar, actualNumBytes[0]);
 			}
-			appendData(readBufferToChar, actualNumBytes[0]);
 		}
 	};
 
 	public void appendData(char[] data, int len) {
 		if (len >= 1) {
-			readSB.append(String.copyValueOf(data, 0, len));
-			Log.d("TCARE", "RICEVUTO TUTTO(" + len + "): " + readSB.toString());
+			synchronized (readSB) {
+
+				readSB.append(String.copyValueOf(data, 0, len));
+
+				if (readSB.toString().trim() != ""
+						&& readSB.toString().contains("\r")) {
+					String[] comandi = readSB.toString().trim().split(" ");
+					if (comandi.length == 2) {
+						for (int i = 0; i < comandi.length; i++) {
+							Log.d("TCARE", "COMANDI[" + i + "]: " + comandi[i]);
+							tv.setText(readSB.toString());
+							readSB.delete(0, readSB.length());
+						}
+					} else {
+						Log.d("TCARE", "Comando errato");
+						readSB.delete(0, readSB.length());
+
+					}
+				}
+
+			}
+
 			utility = new Utility(this);
 
-			if (readSB.toString().trim() != ""
-					&& readSB.toString().substring(len - 1, 1) == "S") {
-				utility.setC_START(readSB.toString().substring(len - 4 - 1, 2));
-				Log.d("TCARE",
-						"RICEVUTO 1: "
-								+ readSB.toString().substring(len - 1 - 1, 1));
-				Log.d("TCARE",
-						"RICEVUTO 2: "
-								+ readSB.toString().substring(len - 4 - 1, 2));
-			}
+			// if (readSB.toString().trim() != ""
+			// && readSB.toString().substring(len - 1, 1) == "S") {
+			// utility.setC_START(readSB.toString().substring(len - 4 - 1, 2));
+			// Log.d("TCARE",
+			// "RICEVUTO 1: "
+			// + readSB.toString().substring(len - 1 - 1, 1));
+			// Log.d("TCARE",
+			// "RICEVUTO 2: "
+			// + readSB.toString().substring(len - 4 - 1, 2));
+			// }
 
 		} else {
 			Log.d("TCARE", "RICEVUTO: buffer vuoto");

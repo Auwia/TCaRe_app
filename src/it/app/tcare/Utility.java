@@ -2,18 +2,13 @@ package it.app.tcare;
 
 import android.app.Activity;
 import android.widget.Button;
-import android.widget.ImageButton;
 
 public class Utility {
 
 	private Activity activity;
-	private ImageButton play, stop, pause;
 
 	public Utility(Activity activity) {
 		this.activity = activity;
-		play = (ImageButton) activity.findViewById(R.id.button_play);
-		stop = (ImageButton) activity.findViewById(R.id.button_stop);
-		pause = (ImageButton) activity.findViewById(R.id.button_pause);
 
 	}
 
@@ -52,27 +47,21 @@ public class Utility {
 	public void setC_START(String returnCode) {
 
 		if (returnCode == "01") {
-			play.setPressed(true);
-			stop.setPressed(false);
-			pause.setPressed(false);
+
 		}
 	}
 
 	public void setC_STOP(String returnCode) {
 
 		if (returnCode == "00") {
-			stop.setPressed(true);
-			play.setPressed(false);
-			pause.setPressed(false);
+
 		}
 	}
 
 	public void setC_PAUSE(String returnCode) {
 
 		if (returnCode == "02") {
-			pause.setPressed(true);
-			play.setPressed(false);
-			stop.setPressed(false);
+
 		}
 	}
 }

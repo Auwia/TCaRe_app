@@ -62,7 +62,7 @@ public class FT311UARTInterface extends Activity {
 		global_context = context;
 		intsharePrefSettings = sharePrefSettings;
 		/* shall we start a thread here or what */
-		usbdata = new byte[1024];
+		usbdata = new byte[256];
 		writeusbdata = new byte[256];
 
 		/* 128(make it 256, but looks like bytes should be enough) */
@@ -433,7 +433,7 @@ public class FT311UARTInterface extends Activity {
 		public void run() {
 			while (true) {
 				Log.d("TCARE", "read_thread: lettura in corso");
-				while (totalBytes > (maxnumbytes - 1024)) {
+				while (totalBytes > (maxnumbytes - 256)) {
 					try {
 						Thread.sleep(50);
 					} catch (InterruptedException e) {
@@ -446,7 +446,7 @@ public class FT311UARTInterface extends Activity {
 
 				try {
 					if (instream != null) {
-						readcount = instream.read(usbdata, 0, 1024);
+						readcount = instream.read(usbdata, 0, 256);
 						if (readcount > 0) {
 							for (int count = 0; count < readcount; count++) {
 								readBuffer[writeIndex] = usbdata[count];
