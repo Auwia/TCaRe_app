@@ -1,0 +1,155 @@
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/contentPane"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    android:background="@drawable/background" >
+
+    <TextView
+        android:id="@+id/title"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentLeft="true"
+        android:gravity="center"
+        android:paddingTop="5dp"
+        android:text="RF face&amp;body" />
+
+    <ImageButton
+        android:id="@+id/button_play"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_centerHorizontal="true"
+        android:layout_marginBottom="40dp"
+        android:background="@android:color/transparent"
+        android:onClick="pressBtnStart"
+        android:src="@drawable/button_play" />
+
+    <ImageButton
+        android:id="@+id/button_pause"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignBottom="@+id/button_play"
+        android:layout_marginBottom="15dp"
+        android:layout_toLeftOf="@+id/button_play"
+        android:background="@android:color/transparent"
+        android:onClick="pressBtnPause"
+        android:src="@drawable/button_pause" />
+
+    <ImageButton
+        android:id="@+id/button_stop"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignBottom="@+id/button_play"
+        android:layout_marginBottom="15dp"
+        android:layout_toRightOf="@+id/button_play"
+        android:background="@android:color/transparent"
+        android:onClick="pressBtnStop"
+        android:src="@drawable/button_stop" />
+
+    <TableRow
+        android:id="@+id/tableRow1"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/title"
+        android:gravity="center"
+        android:paddingTop="30dp" >
+
+        <Button
+            android:id="@+id/cap"
+            style="@style/custom_button_frequency"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/cap" />
+
+        <Button
+            android:id="@+id/res"
+            style="@style/custom_button_frequency"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/res" />
+
+        <Button
+            android:id="@+id/body"
+            style="@style/custom_button_frequency"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/body" />
+
+        <Button
+            android:id="@+id/face"
+            style="@style/custom_button_frequency"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/face" />
+    </TableRow>
+
+    <it.app.tcare.VerticalSeekBar
+        android:id="@+id/vertical_Seekbar_left"
+        style="@style/CustomSeekBar"
+        android:layout_width="wrap_content"
+        android:layout_height="150dip"
+        android:layout_above="@+id/button_pause"
+        android:layout_alignParentLeft="true"
+        android:layout_marginLeft="32dp"
+        android:maxHeight="5dip"
+        android:minHeight="5dip" />
+
+    <it.app.tcare.VerticalSeekBar
+        android:id="@+id/vertical_Seekbar_right"
+        style="@style/CustomSeekBar"
+        android:layout_width="wrap_content"
+        android:layout_height="150dip"
+        android:layout_alignBottom="@+id/vertical_Seekbar_left"
+        android:layout_alignParentRight="true"
+        android:layout_marginRight="21dp"
+        android:maxHeight="5dip"
+        android:minHeight="5dip" />
+
+    <TextView
+        android:id="@+id/vertical_sb_progresstext_left"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignLeft="@+id/vertical_Seekbar_left"
+        android:layout_alignTop="@+id/button_pause"
+        android:text="TextView" />
+
+    <TextView
+        android:id="@+id/vertical_sb_progresstext_right"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignRight="@+id/vertical_Seekbar_right"
+        android:layout_alignTop="@+id/button_stop"
+        android:text="TextView" />
+
+    <TextView
+        android:id="@+id/time"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:layout_above="@+id/button_play"
+        android:layout_alignParentLeft="true"
+        android:layout_marginBottom="14dp"
+        android:gravity="center"
+        android:text="16&apos;45&apos;&apos;"
+        android:textColor="@android:color/black" />
+
+    <Button
+        android:id="@+id/frequency"
+        style="@style/custom_button_frequency"
+        android:layout_width="wrap_content"
+        android:layout_height="50dp"
+        android:layout_above="@+id/time"
+        android:layout_centerHorizontal="true"
+        android:layout_marginBottom="15dp"
+        android:paddingBottom="50dp"
+        android:paddingTop="50dp"
+        android:text="Frequency" />
+
+    <TextView
+        android:id="@+id/revision"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentRight="true"
+        android:textSize="20sp" />
+
+</RelativeLayout>
