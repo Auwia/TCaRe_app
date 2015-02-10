@@ -272,7 +272,7 @@ public class FT311UARTInterface extends Activity {
 			writeusbdata[0] = 0; // send dummy data for instream.read going
 			SendPacket(1);
 		} else {
-			SetConfig(9600, (byte) 1, (byte) 8, (byte) 0, (byte) 0); // send
+			SetConfig(19200, (byte) 1, (byte) 8, (byte) 0, (byte) 0); // send
 																		// default
 																		// setting
 																		// data
