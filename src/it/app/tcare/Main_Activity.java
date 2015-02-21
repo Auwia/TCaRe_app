@@ -1,5 +1,8 @@
 package it.app.tcare;
 
+import java.sql.Timestamp;
+import java.util.Calendar;
+
 import android.app.Activity;
 import android.app.ProgressDialog;
 import android.content.pm.PackageInfo;
@@ -13,19 +16,23 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.View.OnClickListener;
 import android.view.View.OnTouchListener;
 import android.widget.Button;
+import android.widget.ImageButton;
 import android.widget.SeekBar;
 import android.widget.SeekBar.OnSeekBarChangeListener;
 import android.widget.TextView;
 
 public class Main_Activity extends Activity {
 
-	private VerticalSeekBar verticalSeekBar_left, verticalSeekBar_right = null;
-	private TextView vsProgress_left, vsProgress_right, title, time, revision,
-			tv = null;
+	private SeekBar seek_bar_percentage;
+	private TextView time, revision, tv, label_start, label_pause, label_stop,
+			percentage;
 
-	private Button play, stop, pause, cap, res, body, face = null;
+	private Button play, stop, pause, cap, res, body, face, reset, energy,
+			set_value, menu, continuos;
+	private ImageButton frequency;
 
 	public FT311UARTInterface uartInterface;
 	public handler_thread handlerThread;
@@ -102,6 +109,143 @@ public class Main_Activity extends Activity {
 
 		leggi = true;
 
+		frequency = (ImageButton) findViewById(R.id.frequency);
+		frequency.setTag(R.drawable.button_457);
+		frequency.setOnClickListener(new OnClickListener() {
+
+			@Override
+			public void onClick(View arg0) {
+
+				switch ((Integer) frequency.getTag()) {
+				case R.drawable.button_457:
+					frequency.setTag(R.drawable.button_571);
+					frequency.setImageResource(R.drawable.button_571);
+					break;
+				case R.drawable.button_571:
+					frequency.setTag(R.drawable.button_714);
+					frequency.setImageResource(R.drawable.button_714);
+					break;
+				case R.drawable.button_714:
+					frequency.setTag(R.drawable.button_145);
+					frequency.setImageResource(R.drawable.button_145);
+					break;
+				case R.drawable.button_145:
+					frequency.setTag(R.drawable.button_457);
+					frequency.setImageResource(R.drawable.button_457);
+					break;
+
+				}
+			}
+
+		});
+
+		menu = (Button) findViewById(R.id.menu);
+		menu.setOnTouchListener(new OnTouchListener() {
+			@Override
+			public boolean onTouch(View v, MotionEvent event) {
+				// show interest in events resulting from ACTION_DOWN
+				if (event.getAction() == MotionEvent.ACTION_DOWN) {
+
+					return true;
+				}
+
+				// don't handle event unless its ACTION_UP so "doSomething()"
+				// only runs once.
+				if (event.getAction() != MotionEvent.ACTION_UP) {
+
+					return false;
+				}
+
+				if (menu.isPressed())
+					menu.setPressed(false);
+				else
+					menu.setPressed(true);
+
+				return true;
+			}
+		});
+
+		continuos = (Button) findViewById(R.id.button_continuos);
+		continuos.setOnTouchListener(new OnTouchListener() {
+			@Override
+			public boolean onTouch(View v, MotionEvent event) {
+				// show interest in events resulting from ACTION_DOWN
+				if (event.getAction() == MotionEvent.ACTION_DOWN) {
+
+					return true;
+				}
+
+				// don't handle event unless its ACTION_UP so "doSomething()"
+				// only runs once.
+				if (event.getAction() != MotionEvent.ACTION_UP) {
+
+					return false;
+				}
+
+				if (continuos.isPressed())
+					continuos.setPressed(false);
+				else
+					continuos.setPressed(true);
+
+				return true;
+			}
+		});
+
+		energy = (Button) findViewById(R.id.energy);
+		energy.setOnTouchListener(new OnTouchListener() {
+			@Override
+			public boolean onTouch(View v, MotionEvent event) {
+				// show interest in events resulting from ACTION_DOWN
+				if (event.getAction() == MotionEvent.ACTION_DOWN) {
+
+					return true;
+				}
+
+				// don't handle event unless its ACTION_UP so "doSomething()"
+				// only runs once.
+				if (event.getAction() != MotionEvent.ACTION_UP) {
+
+					return false;
+				}
+
+				if (energy.isPressed())
+					energy.setPressed(false);
+				else
+					energy.setPressed(true);
+
+				return true;
+			}
+		});
+
+		set_value = (Button) findViewById(R.id.set_value);
+		set_value.setOnTouchListener(new OnTouchListener() {
+			@Override
+			public boolean onTouch(View v, MotionEvent event) {
+				// show interest in events resulting from ACTION_DOWN
+				if (event.getAction() == MotionEvent.ACTION_DOWN) {
+
+					return true;
+				}
+
+				// don't handle event unless its ACTION_UP so "doSomething()"
+				// only runs once.
+				if (event.getAction() != MotionEvent.ACTION_UP) {
+
+					return false;
+				}
+
+				if (set_value.isPressed())
+					set_value.setPressed(false);
+				else
+					set_value.setPressed(true);
+
+				return true;
+			}
+		});
+
+		percentage = (TextView) findViewById(R.id.percentage);
+		percentage.setText("0");
+
 		PackageInfo pInfo = null;
 		try {
 			pInfo = getPackageManager().getPackageInfo(getPackageName(), 0);
@@ -113,6 +257,26 @@ public class Main_Activity extends Activity {
 		revision.setText(pInfo.versionName);
 
 		tv = (TextView) findViewById(R.id.tv);
+
+		seek_bar_percentage = (SeekBar) findViewById(R.id.seek_bar_percentage);
+		seek_bar_percentage.setMax(100);
+		seek_bar_percentage
+				.setOnSeekBarChangeListener(new OnSeekBarChangeListener() {
+					public void onProgressChanged(SeekBar seekBar,
+							int progress, boolean fromUser) {
+
+						percentage.setText(Integer.toString(progress));
+
+					}
+
+					public void onStartTrackingTouch(SeekBar seekBar) {
+						// TODO Auto-generated method stub
+					}
+
+					public void onStopTrackingTouch(SeekBar seekBar) {
+						// TODO Auto-generated method stub
+					}
+				});
 
 		uartInterface = new FT311UARTInterface(this, null);
 		updateBarHandler = new Handler();
@@ -127,24 +291,32 @@ public class Main_Activity extends Activity {
 		handlerThread = new handler_thread(handler);
 		handlerThread.start();
 
-		title = (TextView) findViewById(R.id.title);
-		title.setTextSize(30);
+		label_start = (TextView) findViewById(R.id.label_start);
+		label_start.setTextSize(18);
+
+		label_stop = (TextView) findViewById(R.id.label_stop);
+		label_stop.setTextSize(18);
+
+		label_pause = (TextView) findViewById(R.id.label_pause);
+		label_pause.setTextSize(18);
 
 		time = (TextView) findViewById(R.id.time);
-		time.setTextSize(30);
-		time.setTextColor(Color.WHITE);
 
 		cap = (Button) findViewById(R.id.cap);
 		cap.setPressed(true);
-		cap.setTextColor(Color.parseColor("#015c5f"));
 
-		play = (Button) findViewById(R.id.button_play);
-		play.setOnTouchListener(new OnTouchListener() {
+		reset = (Button) findViewById(R.id.button_reset);
+		reset.setOnTouchListener(new OnTouchListener() {
 			@Override
 			public boolean onTouch(View v, MotionEvent event) {
 				// show interest in events resulting from ACTION_DOWN
 				if (event.getAction() == MotionEvent.ACTION_DOWN) {
-					writeData("S");
+					for (int i = 0; i < 20000; i += 100) {
+						uartInterface.SetConfig(i, (byte) 8, (byte) 1,
+								(byte) 0, (byte) 0);
+						Log.d("TCARE", "SetConfig: " + i);
+						writeData("S");
+					}
 					return true;
 				}
 
@@ -153,7 +325,32 @@ public class Main_Activity extends Activity {
 				if (event.getAction() != MotionEvent.ACTION_UP)
 					return false;
 				;
+
+				return true;
+			}
+		});
+
+		play = (Button) findViewById(R.id.button_play);
+		play.setOnTouchListener(new OnTouchListener() {
+			@Override
+			public boolean onTouch(View v, MotionEvent event) {
+				// show interest in events resulting from ACTION_DOWN
+				if (event.getAction() == MotionEvent.ACTION_DOWN) {
+					label_start.setTextColor(Color.parseColor("#015c5f"));
+					label_stop.setTextColor(Color.WHITE);
+					label_pause.setTextColor(Color.WHITE);
+					writeData("S");
+					return true;
+				}
+
+				// don't handle event unless its ACTION_UP so "doSomething()"
+				// only runs once.
+				if (event.getAction() != MotionEvent.ACTION_UP) {
+					return false;
+				}
+
 				play.setPressed(true);
+				play.setTextColor(Color.parseColor("#015c5f"));
 				pause.setPressed(false);
 				stop.setPressed(false);
 				return true;
@@ -166,15 +363,20 @@ public class Main_Activity extends Activity {
 			public boolean onTouch(View v, MotionEvent event) {
 				// show interest in events resulting from ACTION_DOWN
 				if (event.getAction() == MotionEvent.ACTION_DOWN) {
+					label_stop.setTextColor(Color.parseColor("#015c5f"));
+					label_start.setTextColor(Color.WHITE);
+					label_pause.setTextColor(Color.WHITE);
 					writeData("T");
 					return true;
 				}
 				// don't handle event unless its ACTION_UP so "doSomething()"
 				// only runs once.
-				if (event.getAction() != MotionEvent.ACTION_UP)
+				if (event.getAction() != MotionEvent.ACTION_UP) {
 					return false;
-				;
+				}
+
 				stop.setPressed(true);
+				stop.setTextColor(Color.parseColor("#015c5f"));
 				play.setPressed(false);
 				pause.setPressed(false);
 				return true;
@@ -187,14 +389,17 @@ public class Main_Activity extends Activity {
 			public boolean onTouch(View v, MotionEvent event) {
 				// show interest in events resulting from ACTION_DOWN
 				if (event.getAction() == MotionEvent.ACTION_DOWN) {
+					label_pause.setTextColor(Color.parseColor("#015c5f"));
+					label_start.setTextColor(Color.WHITE);
+					label_stop.setTextColor(Color.WHITE);
 					writeData("P");
 					return true;
 				}
 				// don't handle event unless its ACTION_UP so "doSomething()"
 				// only runs once.
-				if (event.getAction() != MotionEvent.ACTION_UP)
+				if (event.getAction() != MotionEvent.ACTION_UP) {
 					return false;
-				;
+				}
 				pause.setPressed(true);
 				play.setPressed(false);
 				stop.setPressed(false);
@@ -202,80 +407,94 @@ public class Main_Activity extends Activity {
 			}
 		});
 
-		verticalSeekBar_left = (VerticalSeekBar) findViewById(R.id.vertical_Seekbar_left);
-		vsProgress_left = (TextView) findViewById(R.id.vertical_sb_progresstext_left);
-		verticalSeekBar_left
-				.setOnSeekBarChangeListener(new OnSeekBarChangeListener() {
+		cap = (Button) findViewById(R.id.cap);
+		cap.setOnTouchListener(new OnTouchListener() {
+			@Override
+			public boolean onTouch(View v, MotionEvent event) {
+				// show interest in events resulting from ACTION_DOWN
+				if (event.getAction() == MotionEvent.ACTION_DOWN) {
+					writeData("C");
+					return true;
+				}
+				// don't handle event unless its ACTION_UP so "doSomething()"
+				// only runs once.
+				if (event.getAction() != MotionEvent.ACTION_UP)
+					return false;
+				;
+				cap.setPressed(true);
+				res.setPressed(false);
+				body.setPressed(false);
+				face.setPressed(false);
+				return true;
+			}
+		});
 
-					@Override
-					public void onStopTrackingTouch(SeekBar seekBar) {
-						// TODO Auto-generated method stub
+		res = (Button) findViewById(R.id.res);
+		res.setOnTouchListener(new OnTouchListener() {
+			@Override
+			public boolean onTouch(View v, MotionEvent event) {
+				// show interest in events resulting from ACTION_DOWN
+				if (event.getAction() == MotionEvent.ACTION_DOWN) {
+					writeData("R");
+					return true;
+				}
+				// don't handle event unless its ACTION_UP so "doSomething()"
+				// only runs once.
+				if (event.getAction() != MotionEvent.ACTION_UP)
+					return false;
+				;
+				res.setPressed(true);
+				cap.setPressed(false);
+				body.setPressed(false);
+				face.setPressed(false);
+				return true;
+			}
+		});
 
-					}
+		body = (Button) findViewById(R.id.body);
+		body.setOnTouchListener(new OnTouchListener() {
+			@Override
+			public boolean onTouch(View v, MotionEvent event) {
+				// show interest in events resulting from ACTION_DOWN
+				if (event.getAction() == MotionEvent.ACTION_DOWN) {
+					writeData("B");
+					return true;
+				}
+				// don't handle event unless its ACTION_UP so "doSomething()"
+				// only runs once.
+				if (event.getAction() != MotionEvent.ACTION_UP)
+					return false;
+				;
+				body.setPressed(true);
+				cap.setPressed(false);
+				res.setPressed(false);
+				face.setPressed(false);
+				return true;
+			}
+		});
 
-					@Override
-					public void onStartTrackingTouch(SeekBar seekBar) {
-						// TODO Auto-generated method stub
+		face = (Button) findViewById(R.id.face);
+		face.setOnTouchListener(new OnTouchListener() {
+			@Override
+			public boolean onTouch(View v, MotionEvent event) {
+				// show interest in events resulting from ACTION_DOWN
+				if (event.getAction() == MotionEvent.ACTION_DOWN) {
+					writeData("F");
+					return true;
+				}
+				// don't handle event unless its ACTION_UP so "doSomething()"
+				// only runs once.
+				if (event.getAction() != MotionEvent.ACTION_UP)
+					return false;
+				;
+				face.setPressed(true);
+				cap.setPressed(false);
+				res.setPressed(false);
+				body.setPressed(false);
+				return true;
+			}
+		});
 
-					}
-
-					@Override
-					public void onProgressChanged(SeekBar seekBar,
-							int progress, boolean fromUser) {
-
-						int MIN = 5, MAX = 100;
-						if (progress < MIN) {
-
-							progress = 0;
-						}
-
-						if (progress > MAX) {
-
-							progress = 100;
-						}
-
-						vsProgress_left.setText(progress + " %");
-						vsProgress_left.setTextColor(Color.WHITE);
-
-					}
-				});
-
-		verticalSeekBar_right = (VerticalSeekBar) findViewById(R.id.vertical_Seekbar_right);
-		vsProgress_right = (TextView) findViewById(R.id.vertical_sb_progresstext_right);
-		verticalSeekBar_right
-				.setOnSeekBarChangeListener(new OnSeekBarChangeListener() {
-
-					@Override
-					public void onStopTrackingTouch(SeekBar seekBar) {
-						// TODO Auto-generated method stub
-
-					}
-
-					@Override
-					public void onStartTrackingTouch(SeekBar seekBar) {
-						// TODO Auto-generated method stub
-
-					}
-
-					@Override
-					public void onProgressChanged(SeekBar seekBar,
-							int progress, boolean fromUser) {
-
-						int MIN = 5, MAX = 100;
-						if (progress < MIN) {
-
-							progress = 0;
-						}
-
-						if (progress > MAX) {
-
-							progress = 100;
-						}
-
-						vsProgress_right.setText(progress + " KJ");
-						vsProgress_right.setTextColor(Color.WHITE);
-					}
-				});
 	}
 
 	@Override
@@ -309,9 +528,11 @@ public class Main_Activity extends Activity {
 		}
 
 		uartInterface.SendData(numBytes, writeBuffer);
-		Log.d("TCARE",
-				"writeData: scritto(" + numBytes + "): "
-						+ writeBuffer.toString());
+		Calendar calendar = Calendar.getInstance();
+		Timestamp currentTimestamp = new java.sql.Timestamp(calendar.getTime()
+				.getTime());
+		Log.d("TCARE", currentTimestamp + ": writeData: scritto(" + numBytes
+				+ "): " + writeBuffer.toString());
 
 	}
 
@@ -333,6 +554,7 @@ public class Main_Activity extends Activity {
 			synchronized (readSB) {
 
 				readSB.append(String.copyValueOf(data, 0, len));
+				tv.setText(readSB);
 
 				if (readSB.toString().trim() != ""
 						&& readSB.toString().contains("\r")) {
@@ -340,7 +562,12 @@ public class Main_Activity extends Activity {
 					if (comandi.length == 2) {
 						for (int i = 0; i < comandi.length; i++) {
 							Log.d("TCARE", "COMANDI[" + i + "]: " + comandi[i]);
-							tv.setText(readSB.toString());
+
+							if (comandi[1].equals("<")
+									|| comandi[1].equals(">"))
+								seek_bar_percentage.setProgress(Integer
+										.parseInt(comandi[0], 16));
+
 							readSB.delete(0, readSB.length());
 						}
 					} else {
