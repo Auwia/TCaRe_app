@@ -47,7 +47,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignTop="@+id/cap"
-        android:layout_marginLeft="30dp"
+        android:layout_marginLeft="25dp"
         android:layout_marginTop="-5dp"
         android:layout_toRightOf="@+id/cap"
         android:background="@drawable/button_play" />
@@ -89,17 +89,6 @@
         android:textColor="@android:color/white"
         android:textSize="20sp" />
 
-    <Button
-        android:id="@+id/menu"
-        android:layout_width="wrap_content"
-        android:layout_height="50dp"
-        android:layout_above="@+id/label_pause"
-        android:layout_marginRight="20dp"
-        android:layout_toLeftOf="@+id/revision"
-        android:background="@drawable/button_menu"
-        android:paddingBottom="50dp"
-        android:paddingTop="50dp" />
-
     <TextView
         android:id="@+id/label_start"
         android:layout_width="wrap_content"
@@ -135,7 +124,7 @@
         android:layout_height="wrap_content"
         android:layout_alignLeft="@+id/body"
         android:layout_below="@+id/body"
-        android:layout_marginTop="25dp"
+        android:layout_marginTop="20dp"
         android:gravity="center"
         android:textColor="@android:color/white"
         android:textSize="45sp" />
@@ -312,7 +301,7 @@
         android:layout_height="35dp"
         android:layout_alignLeft="@+id/seek_bar_percentage"
         android:layout_alignTop="@+id/zero"
-        android:layout_marginTop="20dp"
+        android:layout_marginTop="25dp"
         android:background="@drawable/custom_button_set_value" />
 
     <Button
@@ -322,7 +311,7 @@
         android:layout_height="35dp"
         android:layout_alignLeft="@+id/set_value"
         android:layout_below="@+id/set_value"
-        android:layout_marginTop="5dp"
+        android:layout_marginTop="10dp"
         android:background="@drawable/custom_button_set_value" />
 
     <TextView
@@ -353,7 +342,7 @@
         android:layout_height="wrap_content"
         android:layout_alignTop="@+id/set_value"
         android:layout_marginLeft="60dp"
-        android:layout_marginTop="8dp"
+        android:layout_marginTop="15dp"
         android:layout_toRightOf="@+id/label_set_value"
         android:background="@drawable/button_continuos" />
 
@@ -363,7 +352,7 @@
         android:layout_height="wrap_content"
         android:layout_alignLeft="@+id/time"
         android:layout_below="@+id/time"
-        android:layout_marginLeft="5dp"
+        android:layout_marginLeft="20dp"
         android:layout_marginTop="10dp"
         android:background="@android:color/transparent"
         android:contentDescription="@string/frequency"
@@ -373,10 +362,19 @@
         android:id="@+id/frequency_label"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_alignLeft="@+id/time"
+        android:layout_alignLeft="@+id/frequency"
         android:layout_below="@+id/frequency"
-        android:layout_marginLeft="5dp"
         android:text="@string/frequency"
         android:textColor="@android:color/white" />
+
+    <Button
+        android:id="@+id/menu"
+        android:layout_width="wrap_content"
+        android:layout_height="50dp"
+        android:layout_above="@+id/label_stop"
+        android:layout_alignRight="@+id/frequency"
+        android:background="@drawable/button_menu"
+        android:paddingBottom="50dp"
+        android:paddingTop="50dp" />
 
 </RelativeLayout>

@@ -34,19 +34,14 @@ public class FT311UARTInterface extends Activity {
 
 	private byte[] usbdata;
 	private byte[] writeusbdata;
-	private byte[] readBuffer; /* circular buffer */
 	private int readcount;
-	private int totalBytes;
-	private int writeIndex;
-	private int readIndex;
 	private byte status;
-	final int maxnumbytes = 65536;
 
 	public boolean datareceived = false;
 
 	public boolean accessory_attached = false;
 
-	public Context global_context;
+	public Activity global_activity;
 
 	public static String ManufacturerString = "mManufacturer=FTDI";
 	public static String ModelString1 = "mModel=FTDIUARTDemo";
@@ -55,21 +50,22 @@ public class FT311UARTInterface extends Activity {
 
 	public SharedPreferences intsharePrefSettings;
 
+	private Utility utility;
+	private StringBuffer readSB = new StringBuffer();
+
 	/* constructor */
-	public FT311UARTInterface(Context context,
+	public FT311UARTInterface(Activity context,
 			SharedPreferences sharePrefSettings) {
 		super();
-		global_context = context;
+		global_activity = context;
+
+		utility = new Utility(global_activity);
+
 		intsharePrefSettings = sharePrefSettings;
 		/* shall we start a thread here or what */
 		usbdata = new byte[1024];
 		writeusbdata = new byte[256];
 
-		/* 128(make it 256, but looks like bytes should be enough) */
-		readBuffer = new byte[maxnumbytes];
-
-		readIndex = 0;
-		writeIndex = 0;
 		/*********************** USB handling ******************************************/
 
 		usbmanager = (UsbManager) context.getSystemService(Context.USB_SERVICE);
@@ -145,39 +141,6 @@ public class FT311UARTInterface extends Activity {
 		return status;
 	}
 
-	/* read data */
-	public byte ReadData(int numBytes, byte[] buffer, int[] actualNumBytes) {
-		status = 0x00; /* success by default */
-
-		/* should be at least one byte to read */
-		if ((numBytes < 1) || (totalBytes == 0)) {
-			actualNumBytes[0] = 0;
-			status = 0x01;
-			return status;
-		}
-
-		/* check for max limit */
-		if (numBytes > totalBytes)
-			numBytes = totalBytes;
-
-		/* update the number of bytes available */
-		totalBytes -= numBytes;
-
-		actualNumBytes[0] = numBytes;
-
-		/* copy to the user buffer */
-		for (int count = 0; count < numBytes; count++) {
-			buffer[count] = readBuffer[readIndex];
-			readIndex++;
-			/*
-			 * shouldnt read more than what is there in the buffer, so no need
-			 * to check the overflow
-			 */
-			readIndex %= maxnumbytes;
-		}
-		return status;
-	}
-
 	/* method to send on USB */
 	private void SendPacket(int numBytes) {
 		try {
@@ -246,7 +209,7 @@ public class FT311UARTInterface extends Activity {
 						"ResumeAccessory: permessi non trovati, apro il pop-up per conferma permessi");
 				synchronized (mUsbReceiver) {
 					if (!mPermissionRequestPending) {
-						Toast.makeText(global_context,
+						Toast.makeText(global_activity,
 								"Request USB Permission", Toast.LENGTH_SHORT)
 								.show();
 						usbmanager.requestPermission(accessory,
@@ -400,7 +363,7 @@ public class FT311UARTInterface extends Activity {
 							UsbManager.EXTRA_PERMISSION_GRANTED, false)) {
 						OpenAccessory(accessory);
 					} else {
-						Toast.makeText(global_context, "Deny USB Permission",
+						Toast.makeText(global_activity, "Deny USB Permission",
 								Toast.LENGTH_SHORT).show();
 						Log.e("TCARE", "permission denied for accessory "
 								+ accessory);
@@ -432,40 +395,30 @@ public class FT311UARTInterface extends Activity {
 
 		public void run() {
 			while (true) {
-				Log.d("TCARE", "read_thread: lettura in corso");
-				while (totalBytes > (maxnumbytes - 1024)) {
-					try {
-						Thread.sleep(50);
-					} catch (InterruptedException e) {
-						Log.e("TCARE", "read_thread: errore generico");
-						DestroyAccessory(true);
-						CloseAccessory();
-						e.printStackTrace();
-					}
-				}
 
 				try {
 					if (instream != null) {
+
 						readcount = instream.read(usbdata, 0, 1024);
+
 						if (readcount > 0) {
 							for (int count = 0; count < readcount; count++) {
-								readBuffer[writeIndex] = usbdata[count];
-								writeIndex++;
-								writeIndex %= maxnumbytes;
+
+								if (usbdata[count] == (byte) '\r') {
+									Log.d("TCARE",
+											"COMANDO_RICEVUTO="
+													+ readSB.toString());
+									utility.esegui(readSB.toString().trim());
+									readSB.delete(0, readSB.length());
+
+								} else {
+									readSB.append((char) usbdata[count]);
+								}
 							}
-
-							if (writeIndex >= readIndex)
-								totalBytes = writeIndex - readIndex;
-							else
-								totalBytes = (maxnumbytes - readIndex)
-										+ writeIndex;
-
-							// Log.e(">>@@","totalBytes:"+totalBytes);
 						}
 					}
 				} catch (IOException e) {
 					Log.e("TCARE", "read_thread I/O exception: errore generico");
-					e.printStackTrace();
 					DestroyAccessory(true);
 					CloseAccessory();
 				}
@@ -475,5 +428,23 @@ public class FT311UARTInterface extends Activity {
 
 	public boolean thread_lettura_is_alive() {
 		return readThread.isAlive();
+	}
+
+	public void MandaDati(int max) {
+		try {
+			if (outputstream != null) {
+				outputstream.write(max);
+				outputstream.flush();
+
+				Log.d("TCARE", "SendPacket: scrittura eseguita= " + max);
+			} else {
+				Log.i("TCARE", "SendPacket: stream di scrittura chiuso");
+			}
+		} catch (IOException e) {
+			Log.e("TCARE", "SendPacket: errore generico");
+			DestroyAccessory(true);
+			CloseAccessory();
+			e.printStackTrace();
+		}
 	}
 }

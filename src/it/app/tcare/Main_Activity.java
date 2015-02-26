@@ -10,7 +10,6 @@ import android.content.pm.PackageManager.NameNotFoundException;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.os.Handler;
-import android.os.Message;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -26,6 +25,8 @@ import android.widget.TextView;
 
 public class Main_Activity extends Activity {
 
+	private static final int BaudRate = 9200;
+
 	private SeekBar seek_bar_percentage;
 	private TextView time, revision, tv, label_start, label_pause, label_stop,
 			percentage;
@@ -35,7 +36,6 @@ public class Main_Activity extends Activity {
 	private ImageButton frequency;
 
 	public FT311UARTInterface uartInterface;
-	public handler_thread handlerThread;
 
 	private int[] actualNumBytes;
 	private char[] readBufferToChar;
@@ -91,13 +91,16 @@ public class Main_Activity extends Activity {
 		System.exit(0);
 	}
 
-	// @Override
 	public void onHomePressed() {
 		onBackPressed();
 	}
 
 	public void onBackPressed() {
 		super.onBackPressed();
+		uartInterface.DestroyAccessory(true);
+		uartInterface.finish();
+		super.onDestroy();
+		leggi = false;
 		finish();
 		System.exit(0);
 	}
@@ -106,6 +109,8 @@ public class Main_Activity extends Activity {
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.main_activity_layout);
+
+		utility = new Utility(this);
 
 		leggi = true;
 
@@ -120,18 +125,22 @@ public class Main_Activity extends Activity {
 				case R.drawable.button_457:
 					frequency.setTag(R.drawable.button_571);
 					frequency.setImageResource(R.drawable.button_571);
+					writeData("s");
 					break;
 				case R.drawable.button_571:
 					frequency.setTag(R.drawable.button_714);
 					frequency.setImageResource(R.drawable.button_714);
+					writeData("m");
 					break;
 				case R.drawable.button_714:
 					frequency.setTag(R.drawable.button_145);
 					frequency.setImageResource(R.drawable.button_145);
+					writeData("q");
 					break;
 				case R.drawable.button_145:
 					frequency.setTag(R.drawable.button_457);
 					frequency.setImageResource(R.drawable.button_457);
+					writeData("c");
 					break;
 
 				}
@@ -262,6 +271,7 @@ public class Main_Activity extends Activity {
 		seek_bar_percentage.setMax(100);
 		seek_bar_percentage
 				.setOnSeekBarChangeListener(new OnSeekBarChangeListener() {
+
 					public void onProgressChanged(SeekBar seekBar,
 							int progress, boolean fromUser) {
 
@@ -270,26 +280,27 @@ public class Main_Activity extends Activity {
 					}
 
 					public void onStartTrackingTouch(SeekBar seekBar) {
-						// TODO Auto-generated method stub
+
 					}
 
 					public void onStopTrackingTouch(SeekBar seekBar) {
-						// TODO Auto-generated method stub
+
+						uartInterface.MandaDati(Integer.parseInt(percentage
+								.getText().toString()) + 150);
+
 					}
 				});
 
 		uartInterface = new FT311UARTInterface(this, null);
 		updateBarHandler = new Handler();
 		launchBarDialog(null);
-		uartInterface.SetConfig(19200, (byte) 8, (byte) 1, (byte) 0, (byte) 0);
+		uartInterface.SetConfig(BaudRate, (byte) 8, (byte) 1, (byte) 0,
+				(byte) 0);
 
 		writeBuffer = new byte[64];
 		readBuffer = new byte[4096];
 		readBufferToChar = new char[4096];
 		actualNumBytes = new int[1];
-
-		handlerThread = new handler_thread(handler);
-		handlerThread.start();
 
 		label_start = (TextView) findViewById(R.id.label_start);
 		label_start.setTextSize(18);
@@ -534,103 +545,6 @@ public class Main_Activity extends Activity {
 		Log.d("TCARE", currentTimestamp + ": writeData: scritto(" + numBytes
 				+ "): " + writeBuffer.toString());
 
-	}
-
-	final Handler handler = new Handler() {
-		@Override
-		public void handleMessage(Message msg) {
-			synchronized (this) {
-
-				for (int i = 0; i < actualNumBytes[0]; i++) {
-					readBufferToChar[i] = (char) readBuffer[i];
-				}
-				appendData(readBufferToChar, actualNumBytes[0]);
-			}
-		}
-	};
-
-	public void appendData(char[] data, int len) {
-		if (len >= 1) {
-			synchronized (readSB) {
-
-				readSB.append(String.copyValueOf(data, 0, len));
-				tv.setText(readSB);
-
-				if (readSB.toString().trim() != ""
-						&& readSB.toString().contains("\r")) {
-					String[] comandi = readSB.toString().trim().split(" ");
-					if (comandi.length == 2) {
-						for (int i = 0; i < comandi.length; i++) {
-							Log.d("TCARE", "COMANDI[" + i + "]: " + comandi[i]);
-
-							if (comandi[1].equals("<")
-									|| comandi[1].equals(">"))
-								seek_bar_percentage.setProgress(Integer
-										.parseInt(comandi[0], 16));
-
-							readSB.delete(0, readSB.length());
-						}
-					} else {
-						Log.d("TCARE", "Comando errato");
-						readSB.delete(0, readSB.length());
-
-					}
-				}
-
-			}
-
-			utility = new Utility(this);
-
-			// if (readSB.toString().trim() != ""
-			// && readSB.toString().substring(len - 1, 1) == "S") {
-			// utility.setC_START(readSB.toString().substring(len - 4 - 1, 2));
-			// Log.d("TCARE",
-			// "RICEVUTO 1: "
-			// + readSB.toString().substring(len - 1 - 1, 1));
-			// Log.d("TCARE",
-			// "RICEVUTO 2: "
-			// + readSB.toString().substring(len - 4 - 1, 2));
-			// }
-
-		} else {
-			Log.d("TCARE", "RICEVUTO: buffer vuoto");
-		}
-
-	}
-
-	private class handler_thread extends Thread {
-		Handler mHandler;
-
-		/* constructor */
-		handler_thread(Handler h) {
-			mHandler = h;
-		}
-
-		public void run() {
-			Message msg;
-
-			while (leggi) {
-				try {
-					Thread.sleep(200);
-				} catch (InterruptedException e) {
-					Log.d("TCARE",
-							"handler_thread: lettura thread lettura generico");
-					e.printStackTrace();
-				}
-
-				byte status = uartInterface.ReadData(4096, readBuffer,
-						actualNumBytes);
-
-				if (status == 0x00 && actualNumBytes[0] > 0) {
-					msg = mHandler.obtainMessage();
-					mHandler.sendMessage(msg);
-
-				}
-
-			}
-
-			Log.d("TCARE", "handler_thread: fine lettura");
-		}
 	}
 
 	public void launchBarDialog(View view) {

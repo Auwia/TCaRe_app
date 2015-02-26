@@ -2,14 +2,42 @@ package it.app.tcare;
 
 import android.app.Activity;
 import android.widget.Button;
+import android.widget.SeekBar;
 
 public class Utility {
 
 	private Activity activity;
+	private SeekBar seek_bar_percentage;
 
 	public Utility(Activity activity) {
 		this.activity = activity;
 
+		seek_bar_percentage = (SeekBar) activity
+				.findViewById(R.id.seek_bar_percentage);
+
+	}
+
+	public void esegui(String command) {
+
+		String[] comandi = command.split(" ");
+		if (comandi != null && comandi.length == 2) {
+			if (comandi[1].equals("<") || comandi[1].equals(">")) {
+				if (isInteger(comandi[0])) {
+
+					seek_bar_percentage.setProgress(Integer.parseInt(
+							comandi[0], 16));
+				}
+			}
+		}
+	}
+
+	public boolean isInteger(String str) {
+		try {
+			Integer.parseInt(str);
+			return true;
+		} catch (NumberFormatException nfe) {
+		}
+		return false;
 	}
 
 	public void setC_FREQ440(String returnCode) {
