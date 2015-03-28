@@ -1,9 +1,17 @@
 package it.app.tcare;
 
 import java.math.BigInteger;
+import java.security.NoSuchAlgorithmException;
+import java.security.spec.InvalidKeySpecException;
+import java.security.spec.KeySpec;
+
+import javax.crypto.SecretKeyFactory;
+import javax.crypto.spec.PBEKeySpec;
 
 import android.app.Activity;
 import android.content.SharedPreferences;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
 import android.graphics.Color;
 import android.preference.PreferenceManager;
 import android.util.Log;
@@ -26,9 +34,16 @@ public class Utility {
 	private FT311UARTInterface uartInterface;
 
 	private SharedPreferences preferences;
-	private SharedPreferences.Editor editor;
+
+	private Cursor cur;
 
 	private byte[] writeBuffer;
+
+	public void config(Activity x) {
+
+		uartInterface = new FT311UARTInterface(x);
+
+	}
 
 	public void SetConfig() {
 		uartInterface.SetConfig();
@@ -42,16 +57,8 @@ public class Utility {
 		uartInterface.DestroyAccessory(x);
 	}
 
-	public void MandaDati(int x) {
-		uartInterface.MandaDati(x);
-	}
-
-	public void config(Activity x) {
-		try {
-			uartInterface = new FT311UARTInterface(x, preferences);
-		} catch (InterruptedException e) {
-			Log.e("TCARE", e.getMessage());
-		}
+	public boolean MandaDati(int x) {
+		return uartInterface.MandaDati(x);
 	}
 
 	public void writeData(String commandString) {
@@ -110,7 +117,6 @@ public class Utility {
 		joule = (Button) activity.findViewById(R.id.joule);
 
 		preferences = PreferenceManager.getDefaultSharedPreferences(activity);
-		editor = preferences.edit();
 
 	}
 
@@ -127,8 +133,11 @@ public class Utility {
 
 						if (comandi[2].equals("?")) {
 
-							editor.putString("versione_firmware",
-									comandi[0] + " " + comandi[1]).commit();
+							preferences
+									.edit()
+									.putString("versione_firmware",
+											comandi[0] + " " + comandi[1])
+									.commit();
 						}
 					}
 
@@ -140,10 +149,11 @@ public class Utility {
 
 								joule.setText(String.valueOf(Integer.parseInt(
 										comandi[0].substring(0, 2), 16) * 1000));
-								editor.putInt(
-										"energy",
-										Integer.parseInt(
-												comandi[0].substring(0, 2), 16) * 1000)
+								preferences
+										.edit()
+										.putInt("energy",
+												Integer.parseInt(comandi[0]
+														.substring(0, 2), 16) * 1000)
 										.commit();
 
 								seek_bar_percentage.setProgress(Integer
@@ -207,7 +217,8 @@ public class Utility {
 
 									if (fs.substring(4, 6).equals("00")) {
 
-										editor.putBoolean("isPlaying", false)
+										preferences.edit()
+												.putBoolean("isPlaying", false)
 												.commit();
 
 										stop.setPressed(true);
@@ -228,7 +239,8 @@ public class Utility {
 
 									if (fs.substring(4, 6).equals("01")) {
 
-										editor.putBoolean("isPlaying", true)
+										preferences.edit()
+												.putBoolean("isPlaying", true)
 												.commit();
 
 										play.setPressed(true);
@@ -249,7 +261,8 @@ public class Utility {
 
 									if (fs.substring(4, 6).equals("10")) {
 
-										editor.putBoolean("isPlaying", false)
+										preferences.edit()
+												.putBoolean("isPlaying", false)
 												.commit();
 
 										pause.setPressed(true);
@@ -270,18 +283,22 @@ public class Utility {
 									if (fs.substring(7, 8).equals("0")) {
 										pannello_energia
 												.setVisibility(View.GONE);
-										editor.putBoolean("isTime", true)
+										preferences.edit()
+												.putBoolean("isTime", true)
 												.commit();
-										editor.putBoolean("isEnergy", false)
+										preferences.edit()
+												.putBoolean("isEnergy", false)
 												.commit();
 									}
 
 									if (fs.substring(7, 8).equals("1")) {
 										pannello_energia
 												.setVisibility(View.VISIBLE);
-										editor.putBoolean("isEnergy", true)
+										preferences.edit()
+												.putBoolean("isEnergy", true)
 												.commit();
-										editor.putBoolean("isTime", false)
+										preferences.edit()
+												.putBoolean("isTime", false)
 												.commit();
 									}
 
@@ -305,11 +322,12 @@ public class Utility {
 							String minuti, secondi;
 
 							// TODO: Aggiungere il caso in cui i secondi sono 30
-							editor.putInt(
-									"timer_progress",
-									Integer.parseInt(
-											comandi[0].substring(0, 2), 16) * 2)
-									.commit();
+							preferences
+									.edit()
+									.putInt("timer_progress",
+											Integer.parseInt(
+													comandi[0].substring(0, 2),
+													16) * 2).commit();
 
 							if (Integer.parseInt(comandi[0].substring(0, 2), 16) < 10)
 								minuti = "0"
@@ -331,14 +349,19 @@ public class Utility {
 
 							time.setText(minuti + "'" + secondi + "''");
 
-							editor.putString("timer",
-									minuti + "'" + secondi + "''").commit();
+							preferences
+									.edit()
+									.putString("timer",
+											minuti + "'" + secondi + "''")
+									.commit();
 
 							joule.setText(String.valueOf(Integer.parseInt(
 									comandi[1], 16) * 1000));
 
-							editor.putInt("energy",
-									Integer.parseInt(comandi[1], 16) * 1000)
+							preferences
+									.edit()
+									.putInt("energy",
+											Integer.parseInt(comandi[1], 16) * 1000)
 									.commit();
 
 							if (comandi[3].equals("00")) {
@@ -397,37 +420,51 @@ public class Utility {
 								label_continuos.setText(" "
 										+ Integer.parseInt(comandi[5]) + " Hz");
 								label_continuos.setVisibility(View.VISIBLE);
-								editor.putBoolean("isPulsed", true).commit();
-								editor.putBoolean("isContinuos", false)
+								preferences.edit().putBoolean("isPulsed", true)
 										.commit();
-								editor.putInt("hz",
-										Integer.parseInt(comandi[5])).commit();
+								preferences.edit()
+										.putBoolean("isContinuos", false)
+										.commit();
+								preferences
+										.edit()
+										.putInt("hz",
+												Integer.parseInt(comandi[5]))
+										.commit();
 							}
 
 							if (comandi[5].equals("00")) {
 								continuos
 										.setBackgroundResource(R.drawable.continuos_normal);
 								label_continuos.setVisibility(View.INVISIBLE);
-								editor.putBoolean("isContinuos", true).commit();
-								editor.putBoolean("isPulsed", false).commit();
-								editor.putInt("hz", 0).commit();
+								preferences.edit()
+										.putBoolean("isContinuos", true)
+										.commit();
+								preferences.edit()
+										.putBoolean("isPulsed", false).commit();
+								preferences.edit().putInt("hz", 0).commit();
 							}
 
 							if (comandi[6].equals("00")) {
 								pannello_energia.setVisibility(View.GONE);
-								editor.putBoolean("isTime", true).commit();
-								editor.putBoolean("isEnergy", false).commit();
+								preferences.edit().putBoolean("isTime", true)
+										.commit();
+								preferences.edit()
+										.putBoolean("isEnergy", false).commit();
 							}
 
 							if (comandi[6].equals("01")) {
 								pannello_energia.setVisibility(View.VISIBLE);
-								editor.putBoolean("isEnergy", true).commit();
-								editor.putBoolean("isTime", false).commit();
+								preferences.edit().putBoolean("isEnergy", true)
+										.commit();
+								preferences.edit().putBoolean("isTime", false)
+										.commit();
 							}
 
 							if (comandi[7].equals("00")) {
 
-								editor.putBoolean("isPlaying", false).commit();
+								preferences.edit()
+										.putBoolean("isPlaying", false)
+										.commit();
 
 								stop.setPressed(true);
 								stop.setTextColor(Color.parseColor("#015c5f"));
@@ -445,7 +482,8 @@ public class Utility {
 
 							if (comandi[7].equals("01")) {
 
-								editor.putBoolean("isPlaying", true).commit();
+								preferences.edit()
+										.putBoolean("isPlaying", true).commit();
 
 								play.setPressed(true);
 								play.setTextColor(Color.parseColor("#015c5f"));
@@ -463,7 +501,9 @@ public class Utility {
 
 							if (comandi[7].equals("02")) {
 
-								editor.putBoolean("isPlaying", false).commit();
+								preferences.edit()
+										.putBoolean("isPlaying", false)
+										.commit();
 
 								pause.setPressed(true);
 								pause.setTextColor(Color.parseColor("#015c5f"));
@@ -538,8 +578,10 @@ public class Utility {
 										+ Integer.parseInt(comandi[0]) + " Hz");
 								label_continuos.setVisibility(View.VISIBLE);
 
-								editor.putBoolean("isPulsed", true).commit();
-								editor.putBoolean("isContinuos", false)
+								preferences.edit().putBoolean("isPulsed", true)
+										.commit();
+								preferences.edit()
+										.putBoolean("isContinuos", false)
 										.commit();
 
 							}
@@ -550,11 +592,15 @@ public class Utility {
 								label_continuos.setVisibility(View.INVISIBLE);
 								continuos.setPressed(false);
 
-								editor.putBoolean("isPulsed", false).commit();
-								editor.putBoolean("isContinuos", true).commit();
+								preferences.edit()
+										.putBoolean("isPulsed", false).commit();
+								preferences.edit()
+										.putBoolean("isContinuos", true)
+										.commit();
 							}
 
-							editor.putInt("hz", Integer.parseInt(comandi[1]))
+							preferences.edit()
+									.putInt("hz", Integer.parseInt(comandi[1]))
 									.commit();
 
 						}
@@ -625,7 +671,9 @@ public class Utility {
 
 							if (comandi[0].equals("00")) {
 
-								editor.putBoolean("isPlaying", false).commit();
+								preferences.edit()
+										.putBoolean("isPlaying", false)
+										.commit();
 
 								stop.setPressed(true);
 								stop.setTextColor(Color.parseColor("#015c5f"));
@@ -647,7 +695,8 @@ public class Utility {
 
 							if (comandi[0].equals("01")) {
 
-								editor.putBoolean("isPlaying", true).commit();
+								preferences.edit()
+										.putBoolean("isPlaying", true).commit();
 
 								play.setPressed(true);
 								play.setTextColor(Color.parseColor("#015c5f"));
@@ -668,7 +717,9 @@ public class Utility {
 						if (comandi[1].equals("P")) {
 							if (comandi[0].equals("02")) {
 
-								editor.putBoolean("isPlaying", false).commit();
+								preferences.edit()
+										.putBoolean("isPlaying", false)
+										.commit();
 
 								pause.setPressed(true);
 								pause.setTextColor(Color.parseColor("#015c5f"));
@@ -698,6 +749,42 @@ public class Utility {
 		} catch (NumberFormatException nfe) {
 		}
 		return false;
+	}
+
+	public String crypt(String word) {
+		byte[] salt = new byte[16];
+		KeySpec spec = new PBEKeySpec(word.toCharArray(), salt, 65536, 128);
+		SecretKeyFactory f;
+		byte[] hash = null;
+
+		try {
+			f = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA1");
+			hash = f.generateSecret(spec).getEncoded();
+		} catch (NoSuchAlgorithmException e) {
+			e.printStackTrace();
+		} catch (InvalidKeySpecException e) {
+			e.printStackTrace();
+		}
+
+		return new BigInteger(1, hash).toString(16);
+	}
+
+	public String[] db_select(SQLiteDatabase database, String table,
+			String[] fields) {
+
+		cur = database.query(table, fields, null, null, null, null, null);
+		cur.moveToFirst();
+
+		String[] results = new String[cur.getColumnCount()];
+
+		if (cur.getCount() > 0) {
+			for (int i = 0; i < cur.getColumnCount(); i++) {
+				results[i] = cur.getString(i);
+			}
+		}
+		cur.close();
+
+		return results;
 	}
 
 }

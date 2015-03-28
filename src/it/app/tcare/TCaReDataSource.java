@@ -1,24 +1,21 @@
 package it.app.tcare;
 
-import android.content.Context;
+import android.app.Activity;
 import android.database.SQLException;
 
 public class TCaReDataSource {
 
 	private TCaReDB dbHelper;
-	
-	public TCaReDataSource(Context context) 
-	{
-	    dbHelper = new TCaReDB(context);
+
+	public TCaReDataSource(Activity activity) {
+		dbHelper = new TCaReDB(activity);
 	}
 
-	public void open() throws SQLException 
-	{
+	public void open() throws SQLException {
 		dbHelper.getWritableDatabase();
 	}
 
-	public void close() 
-	{
+	public void close() {
 		dbHelper.close();
 	}
 }

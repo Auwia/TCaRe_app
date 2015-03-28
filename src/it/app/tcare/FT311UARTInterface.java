@@ -16,6 +16,7 @@ import android.content.SharedPreferences;
 import android.hardware.usb.UsbAccessory;
 import android.hardware.usb.UsbManager;
 import android.os.ParcelFileDescriptor;
+import android.preference.PreferenceManager;
 import android.util.Log;
 import android.widget.Toast;
 
@@ -56,15 +57,14 @@ public class FT311UARTInterface extends Activity {
 	private Utility utility;
 	private StringBuffer readSB = new StringBuffer();
 
-	public SharedPreferences intsharePrefSettings;
+	public SharedPreferences preferences;
 
 	/* constructor */
-	public FT311UARTInterface(Activity context,
-			SharedPreferences sharePrefSettings) throws InterruptedException {
+	public FT311UARTInterface(Activity context) {
 		super();
 		global_context = context;
 
-		intsharePrefSettings = sharePrefSettings;
+		preferences = PreferenceManager.getDefaultSharedPreferences(context);
 
 		utility = new Utility(global_context);
 
@@ -148,15 +148,10 @@ public class FT311UARTInterface extends Activity {
 		try {
 			if (outputstream != null) {
 				outputstream.write(writeusbdata, 0, numBytes);
-			} else {
-				Log.i("TCARE", "SendPacket: stream di scrittura chiuso");
-				ResumeAccessory(false);
 			}
 		} catch (IOException e) {
 			e.printStackTrace();
-			DestroyAccessory(true);
-			CloseAccessory();
-			e.printStackTrace();
+
 		}
 	}
 
@@ -206,8 +201,6 @@ public class FT311UARTInterface extends Activity {
 
 			if (usbmanager.hasPermission(accessory)) {
 				OpenAccessory(accessory);
-				if (!bConfiged)
-					SetConfig();
 			} else {
 				synchronized (mUsbReceiver) {
 					if (!mPermissionRequestPending) {
@@ -238,7 +231,6 @@ public class FT311UARTInterface extends Activity {
 			try {
 				Thread.sleep(10);
 			} catch (Exception e) {
-				CloseAccessory();
 			}
 
 			READ_ENABLE = false;
@@ -253,9 +245,7 @@ public class FT311UARTInterface extends Activity {
 		try {
 			Thread.sleep(10);
 		} catch (Exception e) {
-			CloseAccessory();
 		}
-
 		CloseAccessory();
 	}
 
@@ -321,14 +311,14 @@ public class FT311UARTInterface extends Activity {
 	}
 
 	protected void saveDetachPreference() {
-		if (intsharePrefSettings != null) {
-			intsharePrefSettings.edit().putString("configed", "FALSE").commit();
+		if (preferences != null) {
+			preferences.edit().putString("configed", "FALSE").commit();
 		}
 	}
 
 	protected void saveDefaultPreference() {
-		if (intsharePrefSettings != null) {
-			intsharePrefSettings.edit().putString("configed", "TRUE").commit();
+		if (preferences != null) {
+			preferences.edit().putString("configed", "TRUE").commit();
 		}
 	}
 
@@ -403,34 +393,29 @@ public class FT311UARTInterface extends Activity {
 						}
 					}
 				} catch (IOException e) {
-					READ_ENABLE = false;
-					e.printStackTrace();
-					DestroyAccessory(true);
-					CloseAccessory();
+
 				}
 			}
 		}
 	}
 
-	public boolean thread_lettura_is_alive() {
-		return readThread.isAlive();
-	}
-
-	public void MandaDati(int max) {
+	public boolean MandaDati(int max) {
 		try {
 			if (outputstream != null) {
 				outputstream.write(max);
 				outputstream.flush();
 
 				Log.d("TCARE", "SendPacket: scrittura eseguita= " + max);
+
+				return true;
+
 			} else {
 				Log.i("TCARE", "SendPacket: stream di scrittura chiuso");
 			}
 		} catch (IOException e) {
-			e.printStackTrace();
-			DestroyAccessory(true);
-			CloseAccessory();
 		}
+
+		return false;
 	}
 
 }

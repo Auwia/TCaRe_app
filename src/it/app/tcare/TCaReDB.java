@@ -1,29 +1,20 @@
 package it.app.tcare;
 
-import java.io.File;
-import java.math.BigInteger;
-import java.security.NoSuchAlgorithmException;
-import java.security.spec.InvalidKeySpecException;
-import java.security.spec.KeySpec;
-
-import javax.crypto.SecretKeyFactory;
-import javax.crypto.spec.PBEKeySpec;
-
+import android.app.Activity;
 import android.content.ContentValues;
-import android.content.Context;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
-import android.util.Log;
 
 public class TCaReDB extends SQLiteOpenHelper {
 
-	private final Context myContext;
+	private Utility utility;
+
+	private Activity activity;
 
 	private static final String DATABASE_NAME = "TCaReDB.db";
 	private static final int DATABASE_VERSION = 1;
 
 	public static final String TABLE_WORK_TIME = "WORK_TIME";
-	public static final String TABLE_PASSWORD = "PASSWORD";
 	public static final String TABLE_SETTINGS = "SETTINGS";
 
 	public static final String COLUMN_WORK_FROM = "WORK_FROM";
@@ -37,67 +28,43 @@ public class TCaReDB extends SQLiteOpenHelper {
 			+ TABLE_WORK_TIME + "(" + COLUMN_WORK_FROM
 			+ " integer primary key NOT NULL DEFAULT 1 " + " );";
 
-	private static final String CREATE_TABLE_TABLE_PASSWORD = "create table "
-			+ TABLE_PASSWORD + "(" + COLUMN_PASSWORD + " VARCHAR(20));";
-
 	private static final String CREATE_TABLE_TABLE_SETTINGS = "create table "
 			+ TABLE_SETTINGS + "(" + COLUMN_SMART + " bit, " + COLUMN_PHYSIO
 			+ " bit, " + COLUMN_SERIAL_NUMBER + " VARCHAR(20), "
-			+ COLUMN_LANGUAGE + " varchar(2));";
+			+ COLUMN_LANGUAGE + " varchar(2), " + COLUMN_PASSWORD
+			+ " VARCHAR(20));";
 
-	public TCaReDB(Context context) {
-		super(context, DATABASE_NAME, null, DATABASE_VERSION);
+	public TCaReDB(Activity activity) {
+		super(activity, DATABASE_NAME, null, DATABASE_VERSION);
 
-		this.myContext = context;
+		this.activity = activity;
 	}
 
 	@Override
 	public void onCreate(SQLiteDatabase database) {
 
-		boolean dbExist = checkDataBase();
-
-		 if (dbExist) {
-		
-		 } else {
+		utility = new Utility(activity);
 
 		database.execSQL(CREATE_TABLE_TABLE_WORK_TIME);
-		database.execSQL(CREATE_TABLE_TABLE_PASSWORD);
-
-		Log.d("TCARE", "CREO TABELLA: " + CREATE_TABLE_TABLE_SETTINGS);
-
 		database.execSQL(CREATE_TABLE_TABLE_SETTINGS);
 
 		ContentValues row = new ContentValues();
 		row.put(COLUMN_WORK_FROM, 1);
 		database.beginTransaction();
 		database.insert(TABLE_WORK_TIME, null, row);
+
 		row.clear();
 		row.put(COLUMN_SMART, 1);
 		row.put(COLUMN_PHYSIO, 0);
-		row.put(COLUMN_SERIAL_NUMBER, "SN ");
+		row.put(COLUMN_SERIAL_NUMBER, "SN");
 		row.put(COLUMN_LANGUAGE, "en");
+		row.put(COLUMN_PASSWORD, utility.crypt("260776"));
 		database.insert(TABLE_SETTINGS, null, row);
 		row.clear();
 
-		byte[] salt = new byte[16];
-		KeySpec spec = new PBEKeySpec("240776".toCharArray(), salt, 65536, 128);
-		SecretKeyFactory f;
-		byte[] hash = null;
-
-		try {
-			f = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA1");
-			hash = f.generateSecret(spec).getEncoded();
-		} catch (NoSuchAlgorithmException e) {
-			e.printStackTrace();
-		} catch (InvalidKeySpecException e) {
-			e.printStackTrace();
-		}
-
-		row.put("PWD", new BigInteger(1, hash).toString(16));
-		database.insert(TABLE_PASSWORD, null, row);
 		database.setTransactionSuccessful();
 		database.endTransaction();
-		}
+
 	}
 
 	@Override
@@ -110,9 +77,4 @@ public class TCaReDB extends SQLiteOpenHelper {
 			int newVersion) {
 	}
 
-	private boolean checkDataBase() {
-
-		File dbFile = myContext.getDatabasePath(DATABASE_NAME);
-		return dbFile.exists();
-	}
 }

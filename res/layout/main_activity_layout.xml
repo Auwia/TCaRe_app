@@ -283,7 +283,7 @@
 
                 <SeekBar
                     android:id="@+id/seek_bar_percentage"
-                    android:layout_width="wrap_content"
+                    android:layout_width="400dp"
                     android:layout_height="wrap_content"
                     android:maxHeight="4dip"
                     android:minHeight="4dip"

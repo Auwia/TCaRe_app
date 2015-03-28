@@ -1,15 +1,12 @@
 package it.app.tcare;
 
-import java.math.BigInteger;
 import java.util.Locale;
 
 import android.app.Activity;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.res.Resources;
-import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
-import android.graphics.Color;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
@@ -17,11 +14,8 @@ import android.preference.PreferenceManager;
 import android.provider.Settings;
 import android.util.DisplayMetrics;
 import android.util.Log;
-import android.view.Display;
-import android.view.MotionEvent;
 import android.view.View;
 import android.view.View.OnClickListener;
-import android.view.View.OnTouchListener;
 import android.widget.Button;
 import android.widget.SeekBar;
 import android.widget.SeekBar.OnSeekBarChangeListener;
@@ -29,12 +23,11 @@ import android.widget.TextView;
 
 public class Main_Activity extends Activity {
 
-	private TextView label_start, label_pause, label_stop, title, title2,
-			percentage, percentuale_simbolo, duty, time, zero, dieci, venti,
-			trenta, quaranta, cinquanta, sessanta, settanta, ottanta, novanta,
-			cento;
-	private Button play, stop, pause, cap, res, body, face, menu, energy,
-			frequency, continuos;
+	private TextView label_start, label_pause, label_stop, percentage, zero,
+			dieci, venti, trenta, quaranta, cinquanta, sessanta, settanta,
+			ottanta, novanta, cento;
+	private Button play, stop, pause, cap, res, body, face, menu, frequency,
+			continuos;
 	private SeekBar seek_bar_percentage;
 
 	public static Utility utility;
@@ -56,7 +49,6 @@ public class Main_Activity extends Activity {
 	private static final String DATABASE_NAME = "TCaReDB.db";
 	private static SQLiteDatabase database;
 	private TCaReDataSource datasource;
-	private Cursor cur;
 
 	public static final Handler handler_reset_work_time_db = new Handler() {
 
@@ -192,15 +184,10 @@ public class Main_Activity extends Activity {
 	@Override
 	protected void onDestroy() {
 
-		utility.DestroyAccessory(true);
-
-		try {
-			Thread.sleep(1000);
-		} catch (InterruptedException e) {
-			e.printStackTrace();
-		}
+		utility.DestroyAccessory(bConfiged);
 
 		System.exit(0);
+
 		super.onDestroy();
 
 	}
@@ -208,70 +195,60 @@ public class Main_Activity extends Activity {
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-		setContentView(R.layout.main_activity_layout);
 
-		String fs = new BigInteger("41", 16).toString(2);
-		if (fs.length() == 7)
-			fs = "0" + fs;
+		find_objects();
 
-		Log.d("TCARE", "Conversione hex to bin: " + fs);
+		initialize_variables();
 
-		preferences = PreferenceManager
-				.getDefaultSharedPreferences(getApplicationContext());
+		load_db();
 
-		preferences.edit().putBoolean("isMenu", false).commit();
+		load_preferences();
 
-		datasource = new TCaReDataSource(getApplicationContext());
-		datasource.open();
-		database = openOrCreateDatabase(DATABASE_NAME,
-				SQLiteDatabase.CREATE_IF_NECESSARY, null);
+		load_language();
 
-		cur = database.query("SETTINGS", new String[] { "SMART", "PHYSIO",
-				"SERIAL_NUMBER", "LANGUAGE" }, null, null, null, null, null);
+		create_button_event();
 
-		cur.moveToFirst();
-		Boolean smart = null, physio = null;
-		String serial_number = null, language = null;
-
-		while (cur.getCount() > 0 && !cur.isAfterLast()) {
-			smart = cur.getInt(0) > 0;
-			physio = cur.getInt(1) > 0;
-			serial_number = cur.getString(2);
-			language = cur.getString(3);
-			cur.moveToNext();
+		act_string = getIntent().getAction();
+		if (-1 != act_string.indexOf("android.intent.action.MAIN")) {
+			restorePreference();
+		} else if (-1 != act_string
+				.indexOf("android.hardware.usb.action.USB_ACCESSORY_ATTACHED")) {
+			cleanPreference();
 		}
-		cur.close();
 
-		preferences.edit().putBoolean("isSmart", smart).commit();
-		preferences.edit().putBoolean("isPhysio", physio).commit();
-		preferences.edit().putString("serial_number", serial_number).commit();
-		preferences.edit().putString("language", language).commit();
+		if (false == bConfiged) {
+			bConfiged = true;
+			utility.SetConfig();
+			savePreference();
+		}
 
-		Resources resource = getResources();
-		DisplayMetrics dm = resource.getDisplayMetrics();
-		android.content.res.Configuration conf = resource.getConfiguration();
-		conf.locale = new Locale(preferences.getString("language", "en"));
-		resource.updateConfiguration(conf, dm);
-		setContentView(R.layout.main_activity_layout);
+		// utility.ResumeAccessory(bConfiged);
+		utility.writeData("@");
+		utility.writeData("^");
+		utility.writeData("a");
+		utility.writeData("?");
+
+		if (!thread.isAlive())
+			thread.start();
+
+	}
+
+	private void initialize_variables() {
 
 		activity = this;
 
 		utility = new Utility(this);
+		utility.config(this);
 
-		title = (TextView) findViewById(R.id.title);
-		title2 = (TextView) findViewById(R.id.title2);
+	}
 
-		percentuale_simbolo = (TextView) findViewById(R.id.percentuale_simbolo);
-
-		duty = (TextView) findViewById(R.id.duty);
-		time = (TextView) findViewById(R.id.time);
-
-		continuos = (Button) findViewById(R.id.button_continuos);
+	private void create_button_event() {
 		continuos.setOnClickListener(new View.OnClickListener() {
 			public void onClick(View v) {
 
-				if (preferences.getBoolean("isPlaying", false))
+				if (preferences.getBoolean("isPlaying", false)) {
 					utility.writeData("P");
+				}
 
 				if (preferences.getBoolean("isContinuos", false)) {
 					if (preferences.getInt("hz", 1) == 0) {
@@ -280,24 +257,22 @@ public class Main_Activity extends Activity {
 						utility.writeData(String.valueOf(preferences.getInt(
 								"hz", 1)));
 					}
-				} else if (preferences.getBoolean("isPulsed", false)) {
-					utility.writeData("0");
-				} else {
-					utility.writeData("1");
 				}
 
+				if (preferences.getBoolean("isPulsed", false)) {
+					utility.writeData("0");
+				}
 			}
 		});
 
-		frequency = (Button) findViewById(R.id.frequency);
-		frequency.setTag(R.drawable.button_457);
 		frequency.setOnClickListener(new OnClickListener() {
 
 			@Override
 			public void onClick(View arg0) {
 
-				if (preferences.getBoolean("isPlaying", false))
+				if (preferences.getBoolean("isPlaying", false)) {
 					utility.writeData("P");
+				}
 
 				switch ((Integer) frequency.getTag()) {
 				case R.drawable.button_457:
@@ -318,30 +293,6 @@ public class Main_Activity extends Activity {
 
 		});
 
-		energy = (Button) findViewById(R.id.energy);
-		energy.setOnTouchListener(new OnTouchListener() {
-			@Override
-			public boolean onTouch(View v, MotionEvent event) {
-				// show interest in events resulting from ACTION_DOWN
-				if (event.getAction() == MotionEvent.ACTION_DOWN) {
-
-					return true;
-				}
-
-				if (event.getAction() != MotionEvent.ACTION_UP) {
-
-					return false;
-				}
-
-				return true;
-			}
-		});
-
-		percentage = (TextView) findViewById(R.id.percentage);
-		percentage.setText("0");
-
-		seek_bar_percentage = (SeekBar) findViewById(R.id.seek_bar_percentage);
-		seek_bar_percentage.setMax(100);
 		seek_bar_percentage
 				.setOnSeekBarChangeListener(new OnSeekBarChangeListener() {
 
@@ -358,332 +309,135 @@ public class Main_Activity extends Activity {
 
 					public void onStopTrackingTouch(SeekBar seekBar) {
 
-						utility.MandaDati(Integer.parseInt(percentage.getText()
-								.toString()) + 150);
+						if (!utility.MandaDati(Integer.parseInt(percentage
+								.getText().toString()) + 150)) {
+							// Se la scheda è scollegata porta la barra a zero
+							seek_bar_percentage.setProgress(0);
+							percentage.setText("0");
+						}
 
 					}
 				});
 
-		label_start = (TextView) findViewById(R.id.label_start);
-		label_start.setTextSize(16);
+		play.setOnClickListener(new View.OnClickListener() {
+			public void onClick(View v) {
 
-		label_stop = (TextView) findViewById(R.id.label_stop);
-		label_stop.setTextSize(16);
-
-		label_pause = (TextView) findViewById(R.id.label_pause);
-		label_pause.setTextSize(16);
-
-		time = (TextView) findViewById(R.id.time);
-
-		cap = (Button) findViewById(R.id.cap);
-		cap.setPressed(true);
-
-		play = (Button) findViewById(R.id.button_play);
-		play.setOnTouchListener(new OnTouchListener() {
-			@Override
-			public boolean onTouch(View v, MotionEvent event) {
-				// show interest in events resulting from ACTION_DOWN
-				if (event.getAction() == MotionEvent.ACTION_DOWN) {
-
-					utility.writeData("S");
-
-					return true;
-				}
-
-				// don't handle event unless its ACTION_UP so "doSomething()"
-				// only runs once.
-				if (event.getAction() != MotionEvent.ACTION_UP) {
-					return false;
-				}
-
-				return true;
+				utility.writeData("S");
 			}
 		});
 
-		stop = (Button) findViewById(R.id.button_stop);
-		stop.setPressed(true);
-		label_stop.setTextColor(Color.parseColor("#78d0d2"));
-		stop.setOnTouchListener(new OnTouchListener() {
-			@Override
-			public boolean onTouch(View v, MotionEvent event) {
-				// show interest in events resulting from ACTION_DOWN
-				if (event.getAction() == MotionEvent.ACTION_DOWN) {
-					utility.writeData("T");
+		stop.setOnClickListener(new View.OnClickListener() {
+			public void onClick(View v) {
 
-					return true;
-				}
-				// don't handle event unless its ACTION_UP so "doSomething()"
-				// only runs once.
-				if (event.getAction() != MotionEvent.ACTION_UP) {
-					return false;
-				}
-
-				return true;
+				utility.writeData("T");
 			}
 		});
 
-		pause = (Button) findViewById(R.id.button_pause);
-		pause.setOnTouchListener(new OnTouchListener() {
-			@Override
-			public boolean onTouch(View v, MotionEvent event) {
-				// show interest in events resulting from ACTION_DOWN
-				if (event.getAction() == MotionEvent.ACTION_DOWN) {
+		pause.setOnClickListener(new View.OnClickListener() {
+			public void onClick(View v) {
 
+				utility.writeData("P");
+			}
+		});
+
+		cap.setOnClickListener(new View.OnClickListener() {
+			public void onClick(View v) {
+
+				if (preferences.getBoolean("isPlaying", false))
 					utility.writeData("P");
 
-					return true;
-				}
-				// don't handle event unless its ACTION_UP so "doSomething()"
-				// only runs once.
-				if (event.getAction() != MotionEvent.ACTION_UP) {
-					return false;
-				}
-
-				return true;
+				utility.writeData("C");
 			}
 		});
 
-		cap = (Button) findViewById(R.id.cap);
-		cap.setOnTouchListener(new OnTouchListener() {
-			@Override
-			public boolean onTouch(View v, MotionEvent event) {
-				// show interest in events resulting from ACTION_DOWN
-				if (event.getAction() == MotionEvent.ACTION_DOWN) {
+		res.setOnClickListener(new View.OnClickListener() {
+			public void onClick(View v) {
 
-					if (preferences.getBoolean("isPlaying", false))
-						utility.writeData("P");
+				if (preferences.getBoolean("isPlaying", false))
+					utility.writeData("P");
 
-					utility.writeData("C");
-					return true;
-				}
-				// don't handle event unless its ACTION_UP so "doSomething()"
-				// only runs once.
-				if (event.getAction() != MotionEvent.ACTION_UP)
-					return false;
-
-				return true;
+				utility.writeData("R");
 			}
 		});
 
-		res = (Button) findViewById(R.id.res);
-		res.setOnTouchListener(new OnTouchListener() {
-			@Override
-			public boolean onTouch(View v, MotionEvent event) {
-				// show interest in events resulting from ACTION_DOWN
-				if (event.getAction() == MotionEvent.ACTION_DOWN) {
+		body.setOnClickListener(new View.OnClickListener() {
+			public void onClick(View v) {
 
-					if (preferences.getBoolean("isPlaying", false))
-						utility.writeData("P");
+				if (preferences.getBoolean("isPlaying", false))
+					utility.writeData("P");
 
-					utility.writeData("R");
-					return true;
-				}
-				// don't handle event unless its ACTION_UP so "doSomething()"
-				// only runs once.
-				if (event.getAction() != MotionEvent.ACTION_UP)
-					return false;
-
-				return true;
+				utility.writeData("B");
 			}
 		});
 
-		body = (Button) findViewById(R.id.body);
-		body.setOnTouchListener(new OnTouchListener() {
-			@Override
-			public boolean onTouch(View v, MotionEvent event) {
-				// show interest in events resulting from ACTION_DOWN
-				if (event.getAction() == MotionEvent.ACTION_DOWN) {
+		face.setOnClickListener(new View.OnClickListener() {
+			public void onClick(View v) {
 
-					if (preferences.getBoolean("isPlaying", false))
-						utility.writeData("P");
+				if (preferences.getBoolean("isPlaying", false))
+					utility.writeData("P");
 
-					utility.writeData("B");
-					return true;
-				}
-				// don't handle event unless its ACTION_UP so "doSomething()"
-				// only runs once.
-				if (event.getAction() != MotionEvent.ACTION_UP)
-					return false;
-
-				return true;
+				utility.writeData("F");
 			}
 		});
 
-		face = (Button) findViewById(R.id.face);
-		face.setOnTouchListener(new OnTouchListener() {
-			@Override
-			public boolean onTouch(View v, MotionEvent event) {
-				// show interest in events resulting from ACTION_DOWN
-				if (event.getAction() == MotionEvent.ACTION_DOWN) {
+		menu.setOnClickListener(new View.OnClickListener() {
+			public void onClick(View v) {
 
-					if (preferences.getBoolean("isPlaying", false))
-						utility.writeData("P");
+				utility.writeData("a");
 
-					utility.writeData("F");
-					return true;
+				try {
+					Thread.sleep(500);
+				} catch (InterruptedException e) {
 				}
-				// don't handle event unless its ACTION_UP so "doSomething()"
-				// only runs once.
-				if (event.getAction() != MotionEvent.ACTION_UP)
-					return false;
 
-				return true;
+				preferences.edit().putBoolean("isMenu", true).commit();
+				Intent intent = new Intent(Main_Activity.this, Menu.class);
+				startActivityForResult(intent, REQUEST_CODE_TEST);
+
+				String[] result = utility.db_select(database, "WORK_TIME",
+						new String[] { "WORK_FROM" });
+
+				preferences.edit()
+						.putInt("work_time", Integer.parseInt(result[0]))
+						.commit();
+
 			}
 		});
+	}
 
-		zero = (TextView) findViewById(R.id.zero);
-		dieci = (TextView) findViewById(R.id.dieci);
-		venti = (TextView) findViewById(R.id.venti);
-		trenta = (TextView) findViewById(R.id.trenta);
-		quaranta = (TextView) findViewById(R.id.quaranta);
-		cinquanta = (TextView) findViewById(R.id.cinquanta);
-		sessanta = (TextView) findViewById(R.id.sessanta);
-		settanta = (TextView) findViewById(R.id.settanta);
-		ottanta = (TextView) findViewById(R.id.ottanta);
-		novanta = (TextView) findViewById(R.id.novanta);
-		cento = (TextView) findViewById(R.id.cento);
+	private void load_language() {
+		Resources resource = getResources();
+		DisplayMetrics dm = resource.getDisplayMetrics();
+		android.content.res.Configuration conf = resource.getConfiguration();
+		conf.locale = new Locale(preferences.getString("language", "en"));
+		resource.updateConfiguration(conf, dm);
+	}
 
-		Display display = getWindowManager().getDefaultDisplay();
+	private void load_db() {
+		database = openOrCreateDatabase(DATABASE_NAME,
+				SQLiteDatabase.CREATE_IF_NECESSARY, null);
+		datasource = new TCaReDataSource(this);
+		datasource.open();
 
-		int width, height;
+	}
 
-		width = display.getWidth();
-		height = display.getHeight();
+	private void load_preferences() {
+		preferences = PreferenceManager
+				.getDefaultSharedPreferences(getApplicationContext());
+		preferences.edit().putBoolean("isMenu", false).commit();
 
-		DisplayMetrics outMetrics = new DisplayMetrics();
-		display.getMetrics(outMetrics);
+		String[] result = utility.db_select(database, "SETTINGS", new String[] {
+				"SMART", "PHYSIO", "SERIAL_NUMBER", "LANGUAGE", "PWD" });
 
-		float density = getResources().getDisplayMetrics().density;
-
-		int moltiplicativo = 0;
-		if (density == 1)
-			moltiplicativo = 5;
-
-		if (density == 3)
-			moltiplicativo = 2;
-
-		if (density == 1.5)
-			moltiplicativo = 4;
-
-		title.setTextSize(width * moltiplicativo / 100);
-		title2.setTextSize(width * moltiplicativo / 100);
-
-		int blocco1_dim = (int) (width * 30 / 100 / 2.2);
-		face.setWidth(blocco1_dim);
-		body.setWidth(blocco1_dim);
-		res.setWidth(blocco1_dim);
-		cap.setWidth(blocco1_dim);
-		// per mantenere le proporzioni: altezza = 35% larghezza
-		face.setHeight(blocco1_dim * 35 / 100);
-		body.setHeight(blocco1_dim * 35 / 100);
-		res.setHeight(blocco1_dim * 35 / 100);
-		cap.setHeight(blocco1_dim * 35 / 100);
-
-		final int blocco2_dim = (int) (width * 50 / 100 / 5);
-		label_start.setWidth(blocco2_dim);
-		label_stop.setWidth(blocco2_dim);
-		label_pause.setWidth(blocco2_dim);
-		// label_start.setTextSize(width * moltiplicativo / 100 / 2);
-		// label_stop.setTextSize(width * moltiplicativo / 100 / 2);
-		// label_pause.setTextSize(width * moltiplicativo / 100 / 2);
-
-		menu = (Button) findViewById(R.id.menu);
-		menu.setOnTouchListener(new OnTouchListener() {
-			@Override
-			public boolean onTouch(View v, MotionEvent event) {
-				// show interest in events resulting from ACTION_DOWN
-				if (event.getAction() == MotionEvent.ACTION_DOWN) {
-
-					if (!preferences.getBoolean("isMenu", false)) {
-
-						utility.writeData("a");
-
-						try {
-							Thread.sleep(500);
-						} catch (InterruptedException e) {
-						}
-
-						preferences.edit().putBoolean("isMenu", true).commit();
-						Intent intent = new Intent(Main_Activity.this,
-								Menu.class);
-						startActivityForResult(intent, REQUEST_CODE_TEST);
-
-						cur = database.query("WORK_TIME",
-								new String[] { "WORK_FROM" }, null, null, null,
-								null, null);
-
-						cur.moveToFirst();
-
-						int work_from = 0;
-
-						while (cur.getCount() > 0 && !cur.isAfterLast()) {
-							work_from = cur.getInt(0);
-							cur.moveToNext();
-						}
-
-						cur.close();
-
-						cur = database.query("PASSWORD",
-								new String[] { "PWD" }, null, null, null, null,
-								null);
-
-						cur.moveToFirst();
-
-						String password = null;
-
-						while (cur.getCount() > 0 && !cur.isAfterLast()) {
-							password = cur.getString(0);
-							cur.moveToNext();
-						}
-
-						cur.close();
-
-						preferences.edit().putInt("work_time", work_from)
-								.commit();
-						preferences.edit().putString("password", password)
-								.commit();
-
-					}
-					return true;
-				}
-
-				if (event.getAction() != MotionEvent.ACTION_UP) {
-
-					return false;
-				}
-
-				return true;
-			}
-		});
-
-		menu.setWidth(blocco2_dim);
-		menu.setHeight(blocco2_dim);
-
-		percentage.setTextSize(height / 2 * 20 / 100 / density);
-		percentuale_simbolo.setTextSize(height / 2 * 20 / 100 / density);
-		duty.setTextSize(height / 2 * 20 / 100 / density / 2);
-		time.setTextSize(height / 2 * 20 / 100 / density);
-
-		android.view.ViewGroup.LayoutParams param = seek_bar_percentage
-				.getLayoutParams();
-		param.width = width * 70 / 100;
-
-		int padding = (int) (width * 70 / 100 / (11));
-
-		zero.setWidth(padding);
-		dieci.setWidth(padding);
-		venti.setWidth(padding);
-		trenta.setWidth(padding);
-		quaranta.setWidth(padding);
-		cinquanta.setWidth(padding);
-		sessanta.setWidth(padding);
-		settanta.setWidth(padding);
-		ottanta.setWidth(padding);
-		novanta.setWidth(padding);
-		cento.setWidth(padding);
-
-		// energy.setWidth((int) (blocco2_dim * moltiplicativo));
-		// energy.setHeight((int) (blocco2_dim * moltiplicativo / 0.40));
+		preferences.edit()
+				.putBoolean("isSmart", Integer.parseInt(result[0]) > 0)
+				.commit();
+		preferences.edit()
+				.putBoolean("isPhysio", Integer.parseInt(result[1]) > 0)
+				.commit();
+		preferences.edit().putString("serial_number", result[2]).commit();
+		preferences.edit().putString("language", result[3]).commit();
+		preferences.edit().putString("password", result[4]).commit();
 
 		if (preferences.getBoolean("isSmart", false)) {
 			cap.setVisibility(View.INVISIBLE);
@@ -694,34 +448,6 @@ public class Main_Activity extends Activity {
 			cap.setVisibility(View.VISIBLE);
 			res.setVisibility(View.VISIBLE);
 		}
-
-		utility.config(this);
-
-		act_string = getIntent().getAction();
-		if (-1 != act_string.indexOf("android.intent.action.MAIN")) {
-			restorePreference();
-		} else if (-1 != act_string
-				.indexOf("android.hardware.usb.action.USB_ACCESSORY_ATTACHED")) {
-			cleanPreference();
-		}
-
-		if (false == bConfiged) {
-			bConfiged = true;
-			utility.SetConfig();
-			savePreference();
-		}
-
-		utility.ResumeAccessory(bConfiged);
-		// utility.SetConfig();
-
-		utility.writeData("@");
-		utility.writeData("^");
-		utility.writeData("a");
-		utility.writeData("?");
-
-		if (!thread.isAlive())
-			thread.start();
-
 	}
 
 	protected void cleanPreference() {
@@ -780,8 +506,10 @@ public class Main_Activity extends Activity {
 
 	@Override
 	protected void onResume() {
-		datasource.open();
 		super.onResume();
+
+		datasource.open();
+
 		if (2 == utility.ResumeAccessory(bConfiged)) {
 			cleanPreference();
 			restorePreference();
@@ -792,6 +520,29 @@ public class Main_Activity extends Activity {
 	protected void onStop() {
 
 		super.onStop();
+	}
+
+	private void find_objects() {
+		setContentView(R.layout.main_activity_layout);
+
+		// BOTTONI
+		frequency = (Button) findViewById(R.id.frequency);
+		cap = (Button) findViewById(R.id.cap);
+		play = (Button) findViewById(R.id.button_play);
+		stop = (Button) findViewById(R.id.button_stop);
+		pause = (Button) findViewById(R.id.button_pause);
+		cap = (Button) findViewById(R.id.cap);
+		res = (Button) findViewById(R.id.res);
+		body = (Button) findViewById(R.id.body);
+		face = (Button) findViewById(R.id.face);
+		menu = (Button) findViewById(R.id.menu);
+		continuos = (Button) findViewById(R.id.button_continuos);
+
+		// TEXTVIEW
+		percentage = (TextView) findViewById(R.id.percentage);
+
+		// SEEKBAR
+		seek_bar_percentage = (SeekBar) findViewById(R.id.seek_bar_percentage);
 	}
 
 }
