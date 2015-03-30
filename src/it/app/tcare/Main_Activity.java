@@ -46,7 +46,7 @@ public class Main_Activity extends Activity {
 	private static final int REQUEST_CODE_TEST = 0;
 
 	public static boolean start_in_progress = false;
-	public static boolean start_lettura = true;
+	public static boolean start_lettura = false;
 	private boolean bConfiged = false;
 
 	public String act_string;
@@ -119,7 +119,7 @@ public class Main_Activity extends Activity {
 					Log.d("TCARE", "SONO nel thread di W dopo la sveglia.");
 				} catch (InterruptedException e) {
 					start_in_progress = false;
-					Log.d("TCARE", "Il thread e' creaptp");
+					Log.d("TCARE", "Il thread e' crepato");
 				}
 				utility.writeData("W");
 
@@ -148,6 +148,24 @@ public class Main_Activity extends Activity {
 	public void onActivityResult(int requestCode, int resultCode, Intent data) {
 		super.onActivityResult(requestCode, resultCode, data);
 
+		Log.d("TCARE", "EXIT e'? " + preferences.getBoolean("exit", false));
+		if (preferences.getBoolean("exit", false)) {
+
+			Log.d("TCARE", "ESCO SI MAIN");
+			start_lettura = false;
+			FT311UARTInterface.READ_ENABLE = false;
+
+			try {
+				Thread.sleep(500);
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+
+			Log.d("TCARE", "CIAO");
+			onBackPressed();
+		}
+
 		if (preferences.getBoolean("isSmart", false)) {
 			cap.setVisibility(View.INVISIBLE);
 			res.setVisibility(View.INVISIBLE);
@@ -157,9 +175,6 @@ public class Main_Activity extends Activity {
 			cap.setVisibility(View.VISIBLE);
 			res.setVisibility(View.VISIBLE);
 		}
-
-		if (preferences.getBoolean("exit", false))
-			finish();
 
 		// utility.ResumeAccessory(bConfiged);
 
@@ -192,9 +207,9 @@ public class Main_Activity extends Activity {
 
 	@Override
 	protected void onDestroy() {
+		super.onDestroy();
 
 		start_lettura = false;
-		Log.d("TCARE", "Lo start_lettura e'? " + start_lettura);
 
 		utility.DestroyAccessory(true);
 
@@ -204,11 +219,14 @@ public class Main_Activity extends Activity {
 			e.printStackTrace();
 		}
 
-		wl.release();
+		// wl.release();
 
 		System.exit(0);
-		super.onDestroy();
 
+	}
+
+	public static void chiudi() {
+		System.exit(0);
 	}
 
 	@Override
@@ -223,6 +241,8 @@ public class Main_Activity extends Activity {
 				.getDefaultSharedPreferences(getApplicationContext());
 
 		preferences.edit().putBoolean("isMenu", false).commit();
+		Log.d("TCARE", "Azzero l'exit");
+		preferences.edit().putBoolean("exit", false).commit();
 
 		database = openOrCreateDatabase(DATABASE_NAME,
 				SQLiteDatabase.CREATE_IF_NECESSARY, null);
@@ -722,10 +742,6 @@ public class Main_Activity extends Activity {
 		utility.writeData("a");
 		utility.writeData("?");
 
-		Thread t = new Thread(new ThreadWriteW());
-		t.setName("Thread_W");
-		t.start();
-
 	}
 
 	protected void cleanPreference() {
@@ -740,8 +756,6 @@ public class Main_Activity extends Activity {
 		} else {
 			preferences.edit().putString("configed", "FALSE").commit();
 		}
-
-		preferences.edit().putBoolean("exit", false).commit();
 
 	}
 
@@ -766,6 +780,7 @@ public class Main_Activity extends Activity {
 	}
 
 	public void onBackPressed() {
+		super.onBackPressed();
 
 		start_lettura = false;
 		Main_Activity.start_lettura = false;
@@ -780,14 +795,20 @@ public class Main_Activity extends Activity {
 
 		System.exit(0);
 
-		super.onBackPressed();
 	}
 
 	@Override
 	protected void onResume() {
 
-		start_lettura = true;
-		Log.d("TCARE", "Lo start_lettura e'? " + start_lettura);
+		Log.d("TCARE", "E' avviato o no? " + start_lettura);
+		if (!start_lettura) {
+			Log.d("TCARE", "Lo avvio...");
+			start_lettura = true;
+
+			Thread t = new Thread(new ThreadWriteW());
+			t.setName("Thread_W");
+			t.start();
+		}
 
 		// wl.acquire();
 

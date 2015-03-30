@@ -8,6 +8,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
+import android.util.Log;
 import android.view.Display;
 import android.view.MotionEvent;
 import android.view.View;
@@ -35,7 +36,26 @@ public class Menu extends Activity {
 	private static final int REQUEST_CODE_TEST = 0;
 
 	@Override
+	public void onActivityResult(int requestCode, int resultCode, Intent data) {
+		super.onActivityResult(requestCode, resultCode, data);
+
+		if (preferences.getBoolean("exit", false)) {
+			Log.d("TCARE", "Questo finish menu'");
+			finish();
+
+			try {
+				Thread.sleep(1000);
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+
+	}
+
+	@Override
 	public void finish() {
+		super.finish();
 
 		if (comando_da_inviare != null) {
 			Bundle b = new Bundle();
@@ -43,11 +63,11 @@ public class Menu extends Activity {
 			Intent i = new Intent();
 			i.putExtras(b);
 			setResult(RESULT_OK, i);
+		} else {
+			setResult(RESULT_OK);
 		}
 
 		preferences.edit().putBoolean("isMenu", false).commit();
-
-		super.finish();
 	}
 
 	@Override
