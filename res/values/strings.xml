@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="app_name">dmd_stock_app</string>
+     <string name="acquisisci">ACQUISISCI</string>
+     <string name="annulla">ANNULLA</string>
+     <string name="conferma">CONFERMA</string>
+     <string name="codice">codice</string>
+     <string name="descrizione">descrizione</string>
+     <string name="quantita">Q.Ta</string>
+
+</resources>

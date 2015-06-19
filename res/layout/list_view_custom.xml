@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<TableRow xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget32"
+    android:layout_width="fill_parent"
+    android:layout_height="wrap_content"
+    android:focusable="false"
+    android:focusableInTouchMode="false" >
+
+    <TextView
+        android:id="@+id/codice"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="20"
+        android:focusable="false"
+        android:focusableInTouchMode="false"
+        android:textColor="@android:color/holo_blue_dark"
+        android:textIsSelectable="false" />
+
+    <TextView
+        android:id="@+id/descrizione"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="20"
+        android:focusable="false"
+        android:focusableInTouchMode="false"
+        android:textColor="@android:color/holo_orange_dark"
+        android:textIsSelectable="false" />
+
+    <TextView
+        android:id="@+id/quantita"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="20"
+        android:focusable="false"
+        android:focusableInTouchMode="false"
+        android:gravity="right"
+        android:textColor="@android:color/holo_red_dark"
+        android:textIsSelectable="false" />
+
+    <Button
+        android:id="@+id/elimina"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="20"
+        android:background="@drawable/elimina"
+        android:clickable="true"
+        android:onClick="cancella_record" />
+
+    <Button
+        android:id="@+id/modifica"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="20"
+        android:background="@drawable/modifica"
+        android:clickable="true"
+        android:onClick="modifica_record" />
+
+</TableRow>
